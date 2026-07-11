@@ -1,9 +1,10 @@
 # ─── Railway Deploy Config ────────────────────────────────────────────────────
 [build]
 builder = "NIXPACKS"
+buildCommand = "cd server && npm install"
 
 [deploy]
-startCommand = "cd server && npm install && npm start"
+startCommand = "cd server && node index.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
