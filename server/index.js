@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-if (!MONGODB_URI) { console.error('❌ MONGODB_URI is not set in .env'); process.exit(1); }
-if (!JWT_SECRET) { console.error('❌ JWT_SECRET is not set in .env'); process.exit(1); }
+if (!MONGODB_URI) console.warn('⚠️  MONGODB_URI is not set — DB features will not work');
+if (!JWT_SECRET) console.warn('⚠️  JWT_SECRET is not set — Auth will not work');
 
 // ─── EXPRESS SETUP ────────────────────────────────────────────────────────────
 const app = express();
@@ -184,17 +184,22 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// ─── MONGODB + START ─────────────────────────────────────────────────────────
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('✅ MongoDB connected');
-    server.listen(PORT, () => {
-      console.log(`🚀 ${APP_NAME} relay server running on port ${PORT}`);
+// ─── START SERVER IMMEDIATELY (Railway healthcheck requires fast response) ─────
+server.listen(PORT, () => {
+  console.log(`🚀 ${APP_NAME} relay server running on port ${PORT}`);
+});
+
+// ─── CONNECT MONGODB IN BACKGROUND ───────────────────────────────────────────
+if (MONGODB_URI) {
+  mongoose.connect(MONGODB_URI)
+    .then(() => {
+      console.log('✅ MongoDB connected');
+    })
+    .catch(err => {
+      console.error('❌ MongoDB connection failed:', err.message);
     });
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection failed:', err.message);
-    process.exit(1);
-  });
+} else {
+  console.error('❌ MONGODB_URI missing — set it in Railway Variables tab');
+}
 
 module.exports = { app, io };
