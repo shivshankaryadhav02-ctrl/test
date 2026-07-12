@@ -651,7 +651,7 @@
         function sendClipboard() {
             const text = document.getElementById('clip-input').value;
             if (text) {
-                emit('command:clipboard-set', { text: text, paste: true }); // Request auto-paste
+                emit('command:type', { text: text }); // Type text on PC
                 // Visual feedback
                 const btn = event.target;
                 const oldText = btn.innerText;
