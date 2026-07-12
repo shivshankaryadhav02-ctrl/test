@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>RemoteLink Touch</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RemoteLink">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* CRITICAL STYLES (Fallback for Tailwind) */
+        body {
+            background-color: #111;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 1rem;
+        }
+
+        input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background: #222;
+            color: white;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* Allow zooming and panning */
+        body {
+            background-color: #000;
+            color: white;
+            touch-action: manipulation;
+            font-family: sans-serif;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #trackpad-area {
+            /* Allow default touch actions (Zoom/Pan) */
+            touch-action: manipulation;
+            position: relative;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            /* Keep image inside */
+        }
+
+        #peek-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            /* Let touches pass to parent */
+        }
+
+        @keyframes ripple-effect {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(4);
+                opacity: 0;
+            }
+        }
+
+        .ripple {
+            position: fixed;
+            /* Fixed to ensure it stays exactly where finger is */
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.7);
+            /* Electric Blue */
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            animation: ripple-effect 0.5s ease-out forwards;
+            z-index: 9999;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-screen p-4">
+
+    <!-- LOGIN -->
+    <div id="login-screen" class="flex flex-col items-center justify-center h-full space-y-4">
+        <h1 class="text-3xl font-bold text-blue-500">RemoteLink Touch</h1>
+        <p class="text-gray-400 text-xs px-8 text-center">Enter the Scan Token or a Manual Passcode</p>
+        <input type="password" id="token-input" placeholder="Passcode (Default: 123456)"
+            class="bg-gray-800 p-3 rounded text-white text-center w-64 border border-gray-700 focus:border-blue-500 outline-none">
+
+        <button onclick="connect()"
+            class="bg-blue-600 px-8 py-3 rounded font-bold shadow-lg shadow-blue-600/20 active:scale-95 transition">Connect</button>
+        <p id="status" class="text-xs text-gray-500">Ready</p>
+    </div>
+
+    <!-- MAIN INTERFACE -->
+    <div id="deck-screen" class="hidden flex-col h-full gap-2">
+
+        <!-- TOOLBAR -->
+        <div class="flex justify-between items-center bg-gray-900 p-2 rounded-lg gap-2">
+            <div class="flex gap-2">
+                <button onclick="emit('command:lock')"
+                    class="p-2 bg-red-900/50 rounded text-red-500 text-xs font-bold w-12">LOCK</button>
+                <button onclick="toggleKeyboard()"
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>⌨️</span><span>KEYS</span></button>
+                <button onclick="toggleCamera()" id="cam-btn"
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>👁️</span><span
+                        id="cam-label">PEEK</span></button>
+                <button onclick="toggleMic()" id="mic-btn"
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🎤</span><span>MIC</span></button>
+            </div>
+
+            <!-- Media Controls -->
+            <div class="flex gap-1">
+                <button onclick="emit('command:media', {action:'voldown'})"
+                    class="p-2 bg-gray-800 rounded text-white text-xs w-8 active:bg-blue-600">-</button>
+                <button onclick="emit('command:media', {action:'playpause'})"
+                    class="p-2 bg-blue-700 rounded text-white text-xs w-12 font-bold active:bg-blue-500">⏯</button>
+                <button onclick="emit('command:media', {action:'volup'})"
+                    class="p-2 bg-gray-800 rounded text-white text-xs w-8 active:bg-blue-600">+</button>
+            </div>
+        </div>
+
+        <!-- CLIPBOARD TOOLBAR -->
+        <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
+            <span class="text-xs text-gray-500">📋</span>
+            <input id="clip-input" type="text" placeholder="Sync Text..."
+                class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <button onclick="sendClipboard()"
+                class="p-2 bg-blue-900/50 text-blue-400 border border-blue-900 rounded text-[10px] font-bold active:bg-blue-800">TO
+                PC</button>
+            <button onclick="getClipboard()"
+                class="p-2 bg-green-900/50 text-green-400 border border-green-900 rounded text-[10px] font-bold active:bg-green-800">FROM
+                PC</button>
+        </div>
+
+        <!-- TOUCH AREA (SCREEN) with Waiting Message -->
+        <!-- TOUCH AREA (SCREEN) with Waiting Message -->
+        <div id="trackpad-area" class="flex-1 relative bg-gray-900 border border-gray-700">
+            <!-- Video Feed -->
+            <img id="peek-img" src="" class="absolute inset-0 w-full h-full object-contain opacity-50"
+                alt="Screen Stream"
+                onerror="this.style.opacity=0; document.getElementById('lock-overlay').classList.remove('hidden');"
+                onload="this.style.opacity=1; document.getElementById('lock-overlay').classList.add('hidden');" />
+
+            <div id="touch-layer" class="absolute inset-0 w-full h-full z-20"></div>
+
+            <!-- Connecting Spinner (Initial) -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10"
+                id="waiting-msg">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+                <span class="text-white text-lg font-bold shadow-black drop-shadow-md">Connecting Video...</span>
+            </div>
+
+            <!-- LOCK SCREEN / NO SIGNAL OVERLAY -->
+            <div id="lock-overlay"
+                class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-900/95 z-40 pointer-events-auto">
+                <span class="text-4xl mb-4">🔒</span>
+                <h3 class="text-red-500 font-bold text-xl tracking-widest">SIGNAL LOCKED</h3>
+                <p class="text-gray-400 text-xs mt-2 text-center max-w-[200px]">
+                    Windows Security has blocked screen capture.
+                </p>
+
+                <form onsubmit="event.preventDefault(); sendBlindUnlock();" class="mt-6 flex flex-col gap-3 w-64">
+                    <input type="password" id="unlock-pass" placeholder="Enter PC PIN/Password"
+                        class="p-3 rounded bg-gray-800 border border-gray-600 text-white text-center focus:border-blue-500 outline-none text-lg placeholder-gray-600 shadow-inner">
+                    <button type="submit"
+                        class="bg-green-600 hover:bg-green-500 p-3 rounded font-bold text-white shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
+                        <span>🔓</span> UNLOCK PC
+                    </button>
+                    <p class="text-[10px] text-gray-500 text-center">Types password & hits Enter automatically.</p>
+                </form>
+            </div>
+        </div>
+
+        <!-- MOUSE BUTTONS -->
+        <div class="grid grid-cols-2 gap-2 h-16">
+            <button class="bg-gray-800 rounded active:bg-blue-600 font-bold text-gray-400"
+                ontouchstart="emit('command:click', {button:'left'}); navigator.vibrate(10);"
+                onclick="emit('command:click', {button:'left'})">L-CLICK</button>
+            <button class="bg-gray-800 rounded active:bg-blue-600 font-bold text-gray-400"
+                ontouchstart="emit('command:click', {button:'right'}); navigator.vibrate(10);"
+                onclick="emit('command:click', {button:'right'})">R-CLICK</button>
+        </div>
+
+        <!-- HIDDEN KEYBOARD INPUT -->
+        <form id="kb-form" onsubmit="event.preventDefault(); emit('command:key', {key:'enter'});"
+            action="javascript:void(0);">
+            <!-- Type="password" prevents auto-correct/predictive text, enabling raw keystrokes -->
+            <input type="password" id="hidden-input" class="opacity-0 absolute top-0" autocomplete="off"
+                autocorrect="off" autocapitalize="off" spellcheck="false" />
+            <input type="submit" class="hidden" />
+        </form>
+    </div>
+
+    <script>
+        let socket;
+        let isStreamOn = false;
+
+        // --- AUTH ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const savedToken = localStorage.getItem('remotelink_token');
+
+        if (urlParams.get('token')) {
+            document.getElementById('token-input').value = urlParams.get('token');
+            connect();
+        } else if (savedToken) {
+            // Auto-Connect with saved token
+            console.log("Found Saved Token, connecting...");
+            document.getElementById('token-input').value = savedToken;
+            connect();
+        }
+
+        function getDeviceId() {
+            let id = localStorage.getItem('remotelink_device_id');
+            if (!id) {
+                id = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('remotelink_device_id', id);
+            }
+            return id;
+        }
+
+        function sendPin() {
+            const pin = document.getElementById('pin-entry').value;
+            if (pin && socket) {
+                socket.emit('command:verify-pin', pin);
+            }
+        }
+
+        function connect() {
+            const inputVal = document.getElementById('token-input').value;
+            if (!inputVal) return;
+
+            document.getElementById('status').innerText = "Connecting...";
+
+            // 🚀 FAST UI SWAP: Hide Login immediately, show Deck (which has its own connecting spinner)
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('deck-screen').classList.remove('hidden');
+            document.getElementById('deck-screen').classList.add('flex');
+
+            const deviceId = getDeviceId();
+
+            // Determine if it's a Token or a Password
+            let authData = { deviceId };
+            // Simple heuristic: Tokens are long (hex), Passwords are short
+            if (inputVal.length > 20) {
+                authData.token = inputVal;
+            } else {
+                authData.password = inputVal;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const relayUrl = urlParams.get('relay') || 'https://remotelink-relay.onrender.com';
+
+            socket = io(relayUrl, {
+                auth: authData, // Send persistent Device ID & Auth
+                transports: ['websocket', 'polling'], // ✅ Prioritize Websocket
+                extraHeaders: {
+                    "ngrok-skip-browser-warning": "true"
+                },
+                reconnection: true,
+                reconnectionAttempts: Infinity, // ♾️ Never stop trying to reconnect
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                timeout: 10000, // Fail fast to retry
+                forceNew: true // Ensure fresh connection
+            });
+
+            socket.on('connect', () => {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('deck-screen').classList.remove('hidden');
+                document.getElementById('deck-screen').classList.add('flex');
+
+                // Show Security Wall until approved
+                document.getElementById('approval-overlay').classList.remove('hidden');
+
+                startStream();
+            });
+
+            socket.on('connection:approved', () => {
+                // Connection Validated - Save Token for next time
+                const token = document.getElementById('token-input').value;
+                if (token) localStorage.setItem('remotelink_token', token);
+
+                // Unlock UI
+                document.getElementById('approval-overlay').classList.add('hidden');
+            });
+
+            socket.on('mic:data', (data) => {
+                if (!isMicOn) return;
+                if (data.chunk) {
+                    playAudioChunk(data.chunk);
+                }
+            });
+
+            socket.on('peek:data', (data) => {
+                const img = document.getElementById('peek-img');
+                if (data.image) {
+                    img.style.objectFit = 'contain';
+                    img.src = data.image;
+                    // Opacity handled by onload
+                    document.getElementById('waiting-msg').style.display = 'none';
+                }
+            });
+
+            socket.on('camera:data', (data) => {
+                const img = document.getElementById('peek-img');
+                if (data.image) {
+                    img.style.objectFit = 'cover'; // Camera fills screen
+                    img.src = data.image;
+                    img.style.opacity = '1';
+                    document.getElementById('waiting-msg').style.display = 'none';
+                }
+            });
+
+            socket.on('clipboard:data', (data) => {
+                if (data.text) {
+                    document.getElementById('clip-input').value = data.text;
+                    // Try to copy to phone clipboard
+                    try { navigator.clipboard.writeText(data.text); } catch (e) { }
+                }
+            });
+
+            // ... existing socket listeners ...
+
+            socket.on('auth:required', () => {
+                console.log("🔒 Authentication Required: PIN");
+                document.getElementById('pin-overlay').classList.remove('hidden');
+                document.getElementById('pin-overlay').classList.add('flex');
+            });
+
+            socket.on('auth:failed', () => {
+                alert("Incorrect PIN");
+                document.getElementById('pin-entry').value = '';
+            });
+
+            socket.on('connection:approved', () => {
+                console.log("✅ Connection Approved!");
+                document.getElementById('waiting-msg').style.display = 'none'; // Hide Spinner
+                document.getElementById('lock-overlay').classList.add('hidden'); // Hide Screen Lock if visible
+                document.getElementById('pin-overlay').classList.add('hidden'); // Hide PIN Overlay
+                document.getElementById('pin-overlay').classList.remove('flex');
+                startStream();
+            });
+
+            // ... existing disconnect listener ...
+
+            socket.on('disconnect', () => {
+                // optional: alert("Disconnected");
+                document.getElementById('waiting-msg').style.display = 'flex';
+                document.getElementById('waiting-msg').querySelector('span').innerText = "Disconnected";
+            });
+        }
+
+        function emit(ev, data = {}) {
+            if (socket) socket.emit(ev, data);
+        }
+
+        // --- STREAMING ---
+        let isCameraMode = false;
+
+        function toggleCamera() {
+            isCameraMode = !isCameraMode;
+            const btn = document.getElementById('cam-btn');
+            const label = document.getElementById('cam-label');
+            if (isCameraMode) {
+                btn.style.backgroundColor = '#ef4444'; // Red
+                btn.querySelector('span:first-child').innerText = '🎥';
+                label.innerText = 'CAM';
+            } else {
+                // Stop camera signal
+                socket.emit('command:camera-stop');
+                btn.style.backgroundColor = '#374151'; // Gray
+                btn.querySelector('span:first-child').innerText = '👁️';
+                label.innerText = 'PEEK';
+            }
+        }
+
+        let isMicOn = false;
+        let audioCtx = null;
+        let nextStartTime = 0;
+
+        function playAudioChunk(base64Chunk) {
+            if (!audioCtx) return;
+
+            try {
+                // 1. Raw Base64 -> Binary String
+                const binaryString = window.atob(base64Chunk);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                // 2. Int16 Array (PCM)
+                const int16Data = new Int16Array(bytes.buffer);
+
+                // 3. Float32 Array
+                const floatData = new Float32Array(int16Data.length);
+                for (let i = 0; i < int16Data.length; i++) {
+                    // Convert Int16 to Float32 range [-1, 1]
+                    const int = int16Data[i];
+                    floatData[i] = int < 0 ? int / 0x8000 : int / 0x7FFF;
+                }
+
+                // 4. Create Buffer (Sample Rate must match Sender: 16000)
+                const buffer = audioCtx.createBuffer(1, floatData.length, 16000);
+                buffer.copyToChannel(floatData, 0);
+
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                // Jitter buffer logic
+                if (nextStartTime < now) nextStartTime = now + 0.05;
+
+                source.start(nextStartTime);
+                nextStartTime += buffer.duration;
+
+            } catch (e) { console.error("PCM Playback Error", e); }
+        }
+
+        function toggleMic() {
+            isMicOn = !isMicOn;
+            const btn = document.getElementById('mic-btn');
+
+            if (isMicOn) {
+                // UNLOCK AUDIO on Click
+                if (!audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                btn.style.backgroundColor = '#ef4444';
+                btn.innerText = '🔊';
+                emit('command:mic-start');
+            } else {
+                btn.style.backgroundColor = '#374151';
+                btn.innerText = '🎤';
+                emit('command:mic-stop');
+                if (audioCtx) audioCtx.suspend();
+            }
+        }
+
+        function startStream() {
+            if (isStreamOn) return;
+            isStreamOn = true;
+            // 10fps loop - faster updates
+            setInterval(() => {
+                if (socket && document.visibilityState === 'visible') {
+                    if (isCameraMode) {
+                        socket.emit('command:camera');
+                    } else {
+                        socket.emit('command:peek');
+                    }
+                }
+            }, 100);
+        }
+
+        // --- TOUCH LOGIC (Friendly with Zoom) ---
+        const touchLayer = document.getElementById('touch-layer');
+        let startX = 0, startY = 0;
+        let isDrag = false;
+
+        function getMappedCoords(touch) {
+            const img = document.getElementById('peek-img');
+            const rect = touchLayer.getBoundingClientRect();
+
+            // Calculate actual image dimensions (contain)
+            const imgRatio = 1280 / 720;
+            // Better: use img.naturalWidth if available
+            let natW = img.naturalWidth || 1280;
+            let natH = img.naturalHeight || 720;
+            if (natW === 0) { natW = 1280; natH = 720; }
+
+            const scale = Math.min(rect.width / natW, rect.height / natH) || 1;
+
+            const w = natW * scale; // Rendered Width
+            const h = natH * scale; // Rendered Height
+
+            const offsetX = (rect.width - w) / 2;
+            const offsetY = (rect.height - h) / 2;
+
+            const xVal = touch.clientX - rect.left - offsetX;
+            const yVal = touch.clientY - rect.top - offsetY;
+
+            // Normalize to 0..1 relative to IMAGE
+            let pctX = xVal / w;
+            let pctY = yVal / h;
+
+            // Clamp
+            pctX = Math.max(0, Math.min(1, pctX));
+            pctY = Math.max(0, Math.min(1, pctY));
+
+            return { x: pctX, y: pctY };
+        }
+
+        touchLayer.addEventListener('touchstart', (e) => {
+            // Do NOT preventDefault here, let browser handle Zoom/Pan start
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            isDrag = false;
+        }, { passive: true });
+
+        touchLayer.addEventListener('touchmove', (e) => {
+            // If moved more than 10px, it's a drag/pan/zoom
+            const touch = e.touches[0];
+            if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+                isDrag = true;
+            }
+        }, { passive: true });
+
+        touchLayer.addEventListener('touchend', (e) => {
+            // If it wasn't a drag (Zoom/Pan), treat as Click
+            if (!isDrag && e.changedTouches.length > 0) {
+                // Prevent default click (ghost click) and handle manually
+                e.preventDefault();
+
+                const touch = e.changedTouches[0];
+                const coords = getMappedCoords(touch);
+
+                // 1. Move Mouse to position
+                emit('command:move-mouse', { x: coords.x, y: coords.y, mode: 'pct' });
+
+                // 2. Click
+                emit('command:click', { button: 'left' });
+
+                showRipple(touch.clientX, touch.clientY);
+            }
+        });
+
+        function showRipple(x, y) {
+            // Haptic Feedback (Vibrate) for "Tactile" feel
+            if (navigator.vibrate) navigator.vibrate(15);
+
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            document.body.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // --- KEYBOARD ---
+        const hiddenInput = document.getElementById('hidden-input');
+
+        function toggleKeyboard() {
+            hiddenInput.focus();
+            hiddenInput.click();
+
+            // 🧠 SMART WAKE: When opening keyboard, ensure password field is FOCUSED.
+            // 1. Wake Screen (Space)
+            // 2. Select Password Field (Tab)
+            setTimeout(() => {
+                // Wake up the lock screen
+                emit('command:media', { action: 'playpause' }); // Space
+
+                // Wait for animation to slide up, then hit TAB to focus password box
+                setTimeout(() => {
+                    emit('command:key', { key: 'tab' });
+                }, 300);
+            }, 100);
+        }
+
+        hiddenInput.addEventListener('input', (e) => {
+            if (e.data) {
+                emit('command:type', { text: e.data });
+            }
+            // Don't clear immediately for backspace tracking? 
+            // Actually, keep it simple.
+            hiddenInput.value = '';
+        });
+
+        hiddenInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' || e.keyCode === 8) {
+                emit('command:key', { key: 'backspace' });
+            } else if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                emit('command:key', { key: 'enter' });
+            }
+        });
+
+        // Mobile "Go" button often triggers form submit
+        document.getElementById('kb-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // DOUBLE ENTER STRATEGY
+            // 1. Send Enter
+            emit('command:key', { key: 'enter' });
+
+            // 2. Wait and Send again (to be sure)
+            setTimeout(() => {
+                emit('command:key', { key: 'enter' });
+            }, 100);
+
+            // 3. Hide Keyboard (optional, but good UX)
+            hiddenInput.blur();
+        });
+
+        // --- CLIPBOARD ---
+        function sendClipboard() {
+            const text = document.getElementById('clip-input').value;
+            if (text) {
+                emit('command:clipboard-set', { text: text, paste: true }); // Request auto-paste
+                // Visual feedback
+                const btn = event.target;
+                const oldText = btn.innerText;
+                btn.innerText = '✅ SENT';
+                setTimeout(() => btn.innerText = oldText, 1000);
+            }
+        }
+
+        function getClipboard() {
+            emit('command:clipboard-get');
+            // Visual feedback
+            const btn = event.target;
+            const oldText = btn.innerText;
+            btn.innerText = '⏳';
+            setTimeout(() => btn.innerText = oldText, 2000);
+        }
+
+        if (socket) {
+            socket.on('clipboard:data', (data) => {
+                if (data.text) {
+                    document.getElementById('clip-input').value = data.text;
+                    // Try to copy to phone clipboard if permissions allow (often fails without user gesture)
+                    try { navigator.clipboard.writeText(data.text); } catch (e) { }
+                }
+            });
+        }
+        // Need to add listener inside connect() as well since socket is null here initially?
+        // Actually, the listeners are lost on reconnect unless we move them.
+        // Simplest: Add specific listener inside startStream or connect block.
+        // Let's modify the emit logic or just rely on global socket check.
+        // Better: Hook into existing socket setup.
+
+        function sendBlindUnlock() {
+            const pass = document.getElementById('unlock-pass').value;
+            if (pass) {
+                // Send each char
+                emit('command:type', { text: pass });
+            }
+            // Clear input for security
+            document.getElementById('unlock-pass').value = '';
+
+            // Hit Enter after short delay
+            setTimeout(() => {
+                emit('command:key', { key: 'enter' });
+                // Vibrate
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            }, 300);
+        }
+
+    </script>
+
+    <!-- SECURITY OVERLAY -->
+    <div id="approval-overlay"
+        class="hidden absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8 text-center backdrop-blur-md">
+        <div class="text-4xl animate-bounce mb-4">🔐</div>
+        <h2 class="text-white text-xl font-bold">Security Check</h2>
+        <p class="text-gray-400 text-sm mt-2">Please check your PC to approve this device.</p>
+    </div>
+</body>
+
+</html>

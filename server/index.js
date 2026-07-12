@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const fs = require('fs');
 
 // ─── APP CONFIG ───────────────────────────────────────────────────────────────
 const APP_NAME = process.env.APP_NAME || 'RemoteLink';
@@ -193,8 +194,12 @@ app.post('/validate-trial', (req, res) => {
   res.json({ success: true, status: 'active', plan: 'free', daysRemaining: 999 });
 });
 
-// Health check
-app.get('/', (req, res) => {
+const path = require('path');
+// Serve Next.js exported static assets (JS, CSS, images)
+app.use(express.static(path.join(__dirname, 'out')));
+
+// Health check JSON endpoint explicitly moved to /api/health
+app.get('/api/health', (req, res) => {
   res.json({
     app: APP_NAME,
     status: 'running',
@@ -205,6 +210,30 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
+});
+
+// Serve index.html (the remote control client page) for the root / route
+app.get('/', (req, res) => {
+  // If request wants JSON health status, give it (backward compatibility)
+  if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
+    return res.json({
+      app: APP_NAME,
+      status: 'running',
+      activeSessions: sessions.size,
+      timestamp: new Date().toISOString()
+    });
+  }
+  res.sendFile(path.join(__dirname, 'out', 'index.html'));
+});
+
+// Serve other Next.js static pages directly
+app.get('/:page', (req, res, next) => {
+  const pageName = req.params.page;
+  const filePath = path.join(__dirname, 'out', `${pageName}.html`);
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+  next();
 });
 
 // 404
