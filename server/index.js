@@ -57,6 +57,7 @@ io.on('connection', (socket) => {
 
     if (type === 'desktop') {
       session.desktop = socket;
+      session.plan = getSessionPlanFromSocket(socket); // Determine plan: 'free' or 'premium'
       socket.emit('identified', { status: 'connected', token });
       socket.emit('relay:ready', { status: 'connected', token }); // Desktop compatibility
 
@@ -66,9 +67,30 @@ io.on('connection', (socket) => {
           hostname: hostname || 'PC',
           username: username || 'User'
         });
+        session.mobile.emit('session-plan', { plan: session.plan || 'free' });
         // Also notify this newly connected desktop that mobile is waiting so it starts streaming!
         socket.emit('mobile-connected', { deviceId: session.mobile.deviceId });
         socket.emit('relay:mobile-connected', { deviceId: session.mobile.deviceId }); // Desktop compatibility
+
+        // Start session timer for free connections
+        if (session.plan !== 'premium') {
+          console.log(`[Timer] Starting 5-minute timer for session token: ${token} (Desktop linked second)`);
+          if (session.timer) clearTimeout(session.timer);
+          session.timer = setTimeout(() => {
+            console.log(`[Timer] Free trial expired! Forcefully closing session token: ${token}`);
+            if (session.mobile?.connected) {
+              session.mobile.emit('session-expired');
+              session.mobile.disconnect(true);
+            }
+            if (session.desktop?.connected) {
+              session.desktop.emit('session-expired');
+              session.desktop.disconnect(true);
+            }
+            session.mobile = null;
+            session.desktop = null;
+            session.timer = null;
+          }, 5 * 60 * 1000);
+        }
       }
     } else if (type === 'mobile') {
       session.mobile = socket;
@@ -77,11 +99,34 @@ io.on('connection', (socket) => {
       // 🚀 AUTO-APPROVE: Immediately approve connection so phone bypasses the security wall
       socket.emit('connection:approved');
       
+      // Notify mobile of the session plan
+      socket.emit('session-plan', { plan: session.plan || 'free' });
+
       // Notify desktop if already connected
       if (session.desktop) {
         session.desktop.emit('mobile-connected', { deviceId });
         session.desktop.emit('relay:mobile-connected', { deviceId }); // Desktop compatibility
         session.desktop.emit('approve-device', { deviceId });
+
+        // Start session timer for free connections
+        if (session.plan !== 'premium') {
+          console.log(`[Timer] Starting 5-minute timer for session token: ${token} (Mobile linked second)`);
+          if (session.timer) clearTimeout(session.timer);
+          session.timer = setTimeout(() => {
+            console.log(`[Timer] Free trial expired! Forcefully closing session token: ${token}`);
+            if (session.mobile?.connected) {
+              session.mobile.emit('session-expired');
+              session.mobile.disconnect(true);
+            }
+            if (session.desktop?.connected) {
+              session.desktop.emit('session-expired');
+              session.desktop.disconnect(true);
+            }
+            session.mobile = null;
+            session.desktop = null;
+            session.timer = null;
+          }, 5 * 60 * 1000);
+        }
       }
     }
   });
@@ -149,13 +194,22 @@ io.on('connection', (socket) => {
     if (socket.clientType === 'desktop') {
       if (session.desktop === socket) {
         session.desktop = null;
+        if (session.timer) {
+          clearTimeout(session.timer);
+          session.timer = null;
+        }
         if (session.mobile?.connected) {
           session.mobile.emit('desktop-disconnected');
+          session.mobile.disconnect(true);
         }
       }
     } else if (socket.clientType === 'mobile') {
       if (session.mobile === socket) {
         session.mobile = null;
+        if (session.timer) {
+          clearTimeout(session.timer);
+          session.timer = null;
+        }
         if (session.desktop?.connected) {
           session.desktop.emit('mobile-disconnected');
           session.desktop.emit('relay:mobile-disconnected'); // Desktop compatibility
@@ -278,8 +332,28 @@ if (MONGODB_URI) {
     .catch(err => {
       console.error('❌ MongoDB connection failed:', err.message);
     });
-} else {
-  console.error('❌ MONGODB_URI missing — set it in Railway Variables tab');
+function getSessionPlanFromSocket(socket) {
+  try {
+    const cookieHeader = socket.handshake.headers.cookie;
+    if (!cookieHeader) return 'free';
+
+    const cookies = {};
+    cookieHeader.split(';').forEach(c => {
+      const parts = c.split('=');
+      if (parts.length === 2) {
+        cookies[parts[0].trim()] = parts[1].trim();
+      }
+    });
+
+    const token = cookies['token'] || cookies['jarvis_token'];
+    if (!token) return 'free';
+
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.sessionPlan || 'free';
+  } catch (e) {
+    return 'free';
+  }
 }
 
 module.exports = { app, io };
