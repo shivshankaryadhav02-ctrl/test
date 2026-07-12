@@ -223,6 +223,12 @@ app.get('/', (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+
+  // If force-mobile or token/deviceId are in the query parameters, serve the controller page (control.html)
+  if (req.query['force-mobile'] === 'true' || (req.query.token && req.query.deviceId)) {
+    return res.sendFile(path.join(__dirname, 'out', 'control.html'));
+  }
+
   res.sendFile(path.join(__dirname, 'out', 'index.html'));
 });
 
