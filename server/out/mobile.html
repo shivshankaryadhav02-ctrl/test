@@ -277,7 +277,7 @@
             document.getElementById('deck-screen').classList.remove('hidden');
             document.getElementById('deck-screen').classList.add('flex');
 
-            const deviceId = getDeviceId();
+            const deviceId = urlParams.get('deviceId') || urlParams.get('userId') || getDeviceId();
 
             // Determine if it's a Token or a Password
             let authData = { deviceId };
@@ -288,8 +288,7 @@
                 authData.password = inputVal;
             }
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const relayUrl = urlParams.get('relay') || 'https://remotelink-relay.onrender.com';
+            const relayUrl = urlParams.get('relay') || window.location.origin;
 
             socket = io(relayUrl, {
                 auth: authData, // Send persistent Device ID & Auth
@@ -312,6 +311,13 @@
 
                 // Show Security Wall until approved
                 document.getElementById('approval-overlay').classList.remove('hidden');
+
+                // Emit identify event so server links this socket as mobile
+                socket.emit('identify', {
+                    type: 'mobile',
+                    deviceId: deviceId,
+                    pairingToken: inputVal
+                });
 
                 startStream();
             });
