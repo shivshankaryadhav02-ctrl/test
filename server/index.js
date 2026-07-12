@@ -332,6 +332,8 @@ if (MONGODB_URI) {
     .catch(err => {
       console.error('❌ MongoDB connection failed:', err.message);
     });
+}
+
 function getSessionPlanFromSocket(socket) {
   try {
     const cookieHeader = socket.handshake.headers.cookie;
