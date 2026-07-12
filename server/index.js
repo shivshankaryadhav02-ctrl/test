@@ -68,10 +68,25 @@ io.on('connection', (socket) => {
     } else if (type === 'mobile') {
       session.mobile = socket;
       socket.emit('identified', { status: 'connected', token });
+      
+      // 🚀 AUTO-APPROVE: Immediately approve connection so phone bypasses the security wall
+      socket.emit('connection:approved');
+      
       // Notify desktop if already connected
       if (session.desktop) {
         session.desktop.emit('mobile-connected');
+        session.desktop.emit('approve-device', { deviceId });
       }
+    }
+  });
+
+  // Forward manual approve-device events from PC to phone
+  socket.on('approve-device', (data) => {
+    const token = socket.pairingToken;
+    if (!token) return;
+    const session = sessions.get(token);
+    if (session?.mobile?.connected) {
+      session.mobile.emit('connection:approved', data);
     }
   });
 
