@@ -214,10 +214,8 @@
         <!-- MOUSE BUTTONS -->
         <div class="grid grid-cols-2 gap-2 h-16">
             <button class="bg-gray-800 rounded active:bg-blue-600 font-bold text-gray-400"
-                ontouchstart="emit('command:click', {button:'left'}); navigator.vibrate(10);"
                 onclick="emit('command:click', {button:'left'})">L-CLICK</button>
             <button class="bg-gray-800 rounded active:bg-blue-600 font-bold text-gray-400"
-                ontouchstart="emit('command:click', {button:'right'}); navigator.vibrate(10);"
                 onclick="emit('command:click', {button:'right'})">R-CLICK</button>
         </div>
 
@@ -579,8 +577,7 @@
         });
 
         function showRipple(x, y) {
-            // Haptic Feedback (Vibrate) for "Tactile" feel
-            if (navigator.vibrate) navigator.vibrate(15);
+            // Haptic Feedback (Vibrate) for "Tactile" feel disabled for silence
 
             const ripple = document.createElement('div');
             ripple.className = 'ripple';
