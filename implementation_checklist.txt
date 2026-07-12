@@ -68,10 +68,11 @@
          for live typing, and Box 2 (🤖 Auto Typer) for auto-typing long pasted 
          paragraphs at a custom speed.
 
-[x] 12. Auto-Typer Delay/Speed Buttons
+[x] 12. Auto-Typer Delay/Speed Buttons (Real-time dynamic adjustment)
        - Status: COMPLETED
        - Details: Added 'SPEED +' and 'SPEED -' buttons next to the Auto-Typer
          input, displaying the character delay in ms (defaults to a human-like 50ms).
+         Made delay adjustments apply dynamically in real time without stopping the script.
 
 [x] 13. Fit Screen Ratio Layout (No Black Bars)
        - Status: COMPLETED
