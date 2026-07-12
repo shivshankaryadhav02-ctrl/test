@@ -162,12 +162,11 @@
 
         <!-- CLIPBOARD TOOLBAR -->
         <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
-            <span class="text-xs text-gray-500">📋</span>
-            <input id="clip-input" type="text" placeholder="Sync Text..."
+            <span class="text-xs text-gray-500">⌨️</span>
+            <input id="clip-input" type="text" placeholder="Type here in Realtime..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button onclick="sendClipboard()"
-                class="p-2 bg-blue-900/50 text-blue-400 border border-blue-900 rounded text-[10px] font-bold active:bg-blue-800">TO
-                PC</button>
+            <button onclick="clearTypeBox()"
+                class="p-2 bg-red-900/50 text-red-400 border border-red-900 rounded text-[10px] font-bold active:bg-red-800">CLEAR</button>
             <button onclick="getClipboard()"
                 class="p-2 bg-green-900/50 text-green-400 border border-green-900 rounded text-[10px] font-bold active:bg-green-800">FROM
                 PC</button>
@@ -600,11 +599,11 @@
             hiddenInput.click();
 
             // 🧠 SMART WAKE: When opening keyboard, ensure password field is FOCUSED.
-            // 1. Wake Screen (Space)
+            // 1. Wake Screen (Shift - Silent)
             // 2. Select Password Field (Tab)
             setTimeout(() => {
-                // Wake up the lock screen
-                emit('command:media', { action: 'playpause' }); // Space
+                // Wake up the lock screen silently
+                emit('command:key', { key: 'shift' }); // Wake
 
                 // Wait for animation to slide up, then hit TAB to focus password box
                 setTimeout(() => {
@@ -648,16 +647,36 @@
         });
 
         // --- CLIPBOARD ---
-        function sendClipboard() {
-            const text = document.getElementById('clip-input').value;
-            if (text) {
-                emit('command:type', { text: text }); // Type text on PC
-                // Visual feedback
-                const btn = event.target;
-                const oldText = btn.innerText;
-                btn.innerText = '✅ SENT';
-                setTimeout(() => btn.innerText = oldText, 1000);
+        let lastLength = 0;
+        const visibleInput = document.getElementById('clip-input');
+
+        visibleInput.addEventListener('input', (e) => {
+            const currentVal = visibleInput.value;
+            const currentLen = currentVal.length;
+
+            if (currentLen > lastLength) {
+                // Characters added
+                const addedText = currentVal.substring(lastLength);
+                emit('command:type', { text: addedText });
+            } else if (currentLen < lastLength) {
+                // Backspaces
+                const diff = lastLength - currentLen;
+                for (let i = 0; i < diff; i++) {
+                    emit('command:key', { key: 'backspace' });
+                }
             }
+            lastLength = currentLen;
+        });
+
+        visibleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                emit('command:key', { key: 'enter' });
+            }
+        });
+
+        function clearTypeBox() {
+            visibleInput.value = '';
+            lastLength = 0;
         }
 
         function getClipboard() {
