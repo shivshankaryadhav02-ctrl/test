@@ -487,18 +487,7 @@
         }
 
         function startStream() {
-            if (isStreamOn) return;
-            isStreamOn = true;
-            // 10fps loop - faster updates
-            setInterval(() => {
-                if (socket && document.visibilityState === 'visible') {
-                    if (isCameraMode) {
-                        socket.emit('command:camera');
-                    } else {
-                        socket.emit('command:peek');
-                    }
-                }
-            }, 100);
+            // Streaming is automatically pushed by the desktop backend, no polling loop required.
         }
 
         // --- TOUCH LOGIC (Friendly with Zoom) ---
