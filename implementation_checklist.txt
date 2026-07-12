@@ -61,4 +61,21 @@
        - Details: Removed the 100ms camera and peek polling loop in mobile.html.
          This prevents spamming the desktop webcam driver, resolving both the 
          screen flashing and the Windows hardware connect/disconnect beep sounds.
+
+[x] 11. Dual Typer UI: Realtime & Auto-Typer Inputs
+       - Status: COMPLETED
+       - Details: Implemented two separate input fields: Box 1 (⚡ Realtime) 
+         for live typing, and Box 2 (🤖 Auto Typer) for auto-typing long pasted 
+         paragraphs at a custom speed.
+
+[x] 12. Auto-Typer Delay/Speed Buttons
+       - Status: COMPLETED
+       - Details: Added 'SPEED +' and 'SPEED -' buttons next to the Auto-Typer
+         input, displaying the character delay in ms (defaults to a human-like 50ms).
+
+[x] 13. Fit Screen Ratio Layout (No Black Bars)
+       - Status: COMPLETED
+       - Details: Modified CSS layout in mobile.html to make the screen trackpad 
+         container automatically match the aspect ratio of the incoming screen 
+         image, removing the letterbox padding.
 ======================================================================
