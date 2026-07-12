@@ -212,23 +212,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
 
-// Serve index.html (the remote control client page) for the root / route
+// Root route handler
 app.get('/', (req, res) => {
-  // If request wants JSON health status, give it (backward compatibility)
-  if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
-    return res.json({
-      app: APP_NAME,
-      status: 'running',
-      activeSessions: sessions.size,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // If force-mobile or token/deviceId are in the query parameters, serve the controller page (control.html)
+  // If force-mobile or token+deviceId present → REDIRECT to /control so Next.js router works correctly
   if (req.query['force-mobile'] === 'true' || (req.query.token && req.query.deviceId)) {
-    return res.sendFile(path.join(__dirname, 'out', 'control.html'));
+    // Preserve all query params in the redirect
+    const qs = new URLSearchParams(req.query).toString();
+    return res.redirect(302, `/control?${qs}`);
   }
 
+  // Otherwise serve the landing page
   res.sendFile(path.join(__dirname, 'out', 'index.html'));
 });
 
