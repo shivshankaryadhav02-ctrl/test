@@ -58,12 +58,17 @@ io.on('connection', (socket) => {
     if (type === 'desktop') {
       session.desktop = socket;
       socket.emit('identified', { status: 'connected', token });
+      socket.emit('relay:ready', { status: 'connected', token }); // Desktop compatibility
+
       // Notify mobile if already waiting
       if (session.mobile) {
         session.mobile.emit('desktop-connected', {
           hostname: hostname || 'PC',
           username: username || 'User'
         });
+        // Also notify this newly connected desktop that mobile is waiting so it starts streaming!
+        socket.emit('mobile-connected', { deviceId: session.mobile.deviceId });
+        socket.emit('relay:mobile-connected', { deviceId: session.mobile.deviceId }); // Desktop compatibility
       }
     } else if (type === 'mobile') {
       session.mobile = socket;
@@ -74,7 +79,8 @@ io.on('connection', (socket) => {
       
       // Notify desktop if already connected
       if (session.desktop) {
-        session.desktop.emit('mobile-connected');
+        session.desktop.emit('mobile-connected', { deviceId });
+        session.desktop.emit('relay:mobile-connected', { deviceId }); // Desktop compatibility
         session.desktop.emit('approve-device', { deviceId });
       }
     }
@@ -149,6 +155,7 @@ io.on('connection', (socket) => {
       session.mobile = null;
       if (session.desktop?.connected) {
         session.desktop.emit('mobile-disconnected');
+        session.desktop.emit('relay:mobile-disconnected'); // Desktop compatibility
       }
     }
 
