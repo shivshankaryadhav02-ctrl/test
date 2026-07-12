@@ -147,15 +147,19 @@ io.on('connection', (socket) => {
     if (!session) return;
 
     if (socket.clientType === 'desktop') {
-      session.desktop = null;
-      if (session.mobile?.connected) {
-        session.mobile.emit('desktop-disconnected');
+      if (session.desktop === socket) {
+        session.desktop = null;
+        if (session.mobile?.connected) {
+          session.mobile.emit('desktop-disconnected');
+        }
       }
     } else if (socket.clientType === 'mobile') {
-      session.mobile = null;
-      if (session.desktop?.connected) {
-        session.desktop.emit('mobile-disconnected');
-        session.desktop.emit('relay:mobile-disconnected'); // Desktop compatibility
+      if (session.mobile === socket) {
+        session.mobile = null;
+        if (session.desktop?.connected) {
+          session.desktop.emit('mobile-disconnected');
+          session.desktop.emit('relay:mobile-disconnected'); // Desktop compatibility
+        }
       }
     }
 
