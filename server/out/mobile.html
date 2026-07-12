@@ -675,6 +675,8 @@
 
         // --- AUTO TYPER LOGIC ---
         let autoTypeInterval = null;
+        let autoTypeIndex = 0;
+        let autoTypeText = '';
         let typingSpeed = 50; // Default: 50ms (human-like typing speed)
         const autoInput = document.getElementById('auto-input');
         const speedLabel = document.getElementById('speed-label');
@@ -687,23 +689,29 @@
                 typingSpeed = Math.min(200, typingSpeed + 10); // Maximum 200ms delay
             }
             speedLabel.innerText = typingSpeed + 'ms';
+
+            // If auto-typer is currently active, apply the new speed immediately!
+            if (autoTypeInterval) {
+                runAutoTypeLoop();
+            }
         }
 
         function startAutoType() {
+            autoTypeText = autoInput.value;
+            if (!autoTypeText) return;
+            autoTypeIndex = 0;
+            runAutoTypeLoop();
+        }
+
+        function runAutoTypeLoop() {
             if (autoTypeInterval) {
                 clearInterval(autoTypeInterval);
-                autoTypeInterval = null;
             }
-
-            const text = autoInput.value;
-            if (!text) return;
-
-            let index = 0;
             autoTypeInterval = setInterval(() => {
-                if (index < text.length) {
-                    const char = text[index];
+                if (autoTypeIndex < autoTypeText.length) {
+                    const char = autoTypeText[autoTypeIndex];
                     emit('command:type', { text: char });
-                    index++;
+                    autoTypeIndex++;
                 } else {
                     clearInterval(autoTypeInterval);
                     autoTypeInterval = null;
