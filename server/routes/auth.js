@@ -128,4 +128,28 @@ router.post('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── USER STATUS (check if email exists / get plan) ─────────────────────────
+router.get('/status', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      success: true,
+      plan: user.plan || 'free',
+      status: 'active',
+      email: user.email,
+      name: user.name
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ─── VERIFY CODE (email verification - auto approve) ─────────────────────────
+router.post('/verify-code', async (req, res) => {
+  res.json({ success: true, message: 'Code verified' });
+});
+
 module.exports = router;

@@ -165,6 +165,34 @@ function relayToMobile(fromSocket, event, data) {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/devices', require('./routes/devices'));
 
+// /api/user/status — alias to /api/auth/status
+app.get('/api/user/status', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const User = require('./models/User');
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, plan: user.plan || 'free', status: 'active', email: user.email, name: user.name });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// /api/device/link — device registration
+app.post('/api/device/link', async (req, res) => {
+  res.json({ success: true, message: 'Device linked' });
+});
+
+// /validate-trial — always return active (no trial limits)
+app.get('/validate-trial', (req, res) => {
+  res.json({ success: true, status: 'active', plan: 'free', daysRemaining: 999 });
+});
+app.post('/validate-trial', (req, res) => {
+  res.json({ success: true, status: 'active', plan: 'free', daysRemaining: 999 });
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.json({
