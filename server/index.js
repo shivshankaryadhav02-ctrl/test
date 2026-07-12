@@ -214,11 +214,9 @@ app.get('/health', (req, res) => {
 
 // Root route handler
 app.get('/', (req, res) => {
-  // If force-mobile or token+deviceId present → REDIRECT to /control so Next.js router works correctly
+  // If force-mobile or token+deviceId present → serve standalone mobile.html (auto-connects via socket, no auth needed)
   if (req.query['force-mobile'] === 'true' || (req.query.token && req.query.deviceId)) {
-    // Preserve all query params in the redirect
-    const qs = new URLSearchParams(req.query).toString();
-    return res.redirect(302, `/control?${qs}`);
+    return res.sendFile(path.join(__dirname, 'out', 'mobile.html'));
   }
 
   // Otherwise serve the landing page
