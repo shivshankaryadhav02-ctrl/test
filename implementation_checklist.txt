@@ -37,4 +37,28 @@
        - Details: Re-routed the "TO PC" text box to process typing, backspaces,
          and pasting in real-time as you write. Added a local "CLEAR" button
          to safely clear the phone's text box.
+
+[x] 7. Silent Mouse Clicking & Double-Click Fix
+       - Status: COMPLETED
+       - Details: Disabled haptic phone vibration and removed duplicate touch 
+         events on the phone to prevent sending double clicks which triggered
+         default Windows beep sounds on the laptop.
+
+[x] 8. Media Player Removal & Volume Keys Fix
+       - Status: COMPLETED
+       - Details: Removed the music play/pause (⏯) button from the toolbar.
+         Re-routed the volume '-' and '+' buttons to emit native 'volumeup' and 
+         'volumedown' key strokes to adjust the laptop's volume.
+
+[x] 9. Microphone (MIC) Transmission Fix
+       - Status: COMPLETED
+       - Details: Re-routed the mobile MIC toggle to emit 'command:audio-start' 
+         and 'command:audio-stop' to match the events that the desktop receiver 
+         is listening for.
+
+[x] 10. Camera Flashing & USB Beeping Fix
+       - Status: COMPLETED
+       - Details: Removed the 100ms camera and peek polling loop in mobile.html.
+         This prevents spamming the desktop webcam driver, resolving both the 
+         screen flashing and the Windows hardware connect/disconnect beep sounds.
 ======================================================================
