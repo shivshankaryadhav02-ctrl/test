@@ -158,23 +158,33 @@
             </div>
         </div>
 
-        <!-- CLIPBOARD TOOLBAR -->
+        <!-- REALTIME TYPING TOOLBAR -->
         <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
-            <span class="text-xs text-gray-500">⌨️</span>
+            <span class="text-xs text-gray-500">⚡</span>
             <input id="clip-input" type="text" placeholder="Type here in Realtime..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
             <button onclick="clearTypeBox()"
                 class="p-2 bg-red-900/50 text-red-400 border border-red-900 rounded text-[10px] font-bold active:bg-red-800">CLEAR</button>
-            <button onclick="getClipboard()"
-                class="p-2 bg-green-900/50 text-green-400 border border-green-900 rounded text-[10px] font-bold active:bg-green-800">FROM
-                PC</button>
+        </div>
+
+        <!-- AUTO TYPER TOOLBAR -->
+        <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2 mt-1">
+            <span class="text-xs text-gray-500">🤖</span>
+            <input id="auto-input" type="text" placeholder="Paste text to Auto-Type..."
+                class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <button onclick="startAutoType()"
+                class="p-2 bg-blue-900/50 text-blue-400 border border-blue-900 rounded text-[10px] font-bold active:bg-blue-800">AUTO TYPE</button>
+            <button onclick="adjustSpeed(-1)"
+                class="p-2 bg-gray-800 text-gray-300 rounded text-[10px] font-bold active:bg-gray-700">SPEED -</button>
+            <span id="speed-label" class="text-[10px] text-gray-400 font-mono w-10 text-center">50ms</span>
+            <button onclick="adjustSpeed(1)"
+                class="p-2 bg-gray-800 text-gray-300 rounded text-[10px] font-bold active:bg-gray-700">SPEED +</button>
         </div>
 
         <!-- TOUCH AREA (SCREEN) with Waiting Message -->
-        <!-- TOUCH AREA (SCREEN) with Waiting Message -->
-        <div id="trackpad-area" class="flex-1 relative bg-gray-900 border border-gray-700">
+        <div id="trackpad-area" class="relative bg-gray-900 border border-gray-700 w-full overflow-hidden">
             <!-- Video Feed -->
-            <img id="peek-img" src="" class="absolute inset-0 w-full h-full object-contain opacity-50"
+            <img id="peek-img" src="" class="w-full h-auto block opacity-50"
                 alt="Screen Stream"
                 onerror="this.style.opacity=0; document.getElementById('lock-overlay').classList.remove('hidden');"
                 onload="this.style.opacity=1; document.getElementById('lock-overlay').classList.add('hidden');" />
@@ -630,7 +640,7 @@
             hiddenInput.blur();
         });
 
-        // --- CLIPBOARD ---
+        // --- REALTIME TYPING & AUTO TYPER ---
         let lastLength = 0;
         const visibleInput = document.getElementById('clip-input');
 
@@ -663,23 +673,42 @@
             lastLength = 0;
         }
 
-        function getClipboard() {
-            emit('command:clipboard-get');
-            // Visual feedback
-            const btn = event.target;
-            const oldText = btn.innerText;
-            btn.innerText = '⏳';
-            setTimeout(() => btn.innerText = oldText, 2000);
+        // --- AUTO TYPER LOGIC ---
+        let autoTypeInterval = null;
+        let typingSpeed = 50; // Default: 50ms (human-like typing speed)
+        const autoInput = document.getElementById('auto-input');
+        const speedLabel = document.getElementById('speed-label');
+
+        function adjustSpeed(direction) {
+            // direction: 1 = SPEED+ (faster, decrease delay), -1 = SPEED- (slower, increase delay)
+            if (direction > 0) {
+                typingSpeed = Math.max(10, typingSpeed - 10); // Minimum 10ms delay
+            } else {
+                typingSpeed = Math.min(200, typingSpeed + 10); // Maximum 200ms delay
+            }
+            speedLabel.innerText = typingSpeed + 'ms';
         }
 
-        if (socket) {
-            socket.on('clipboard:data', (data) => {
-                if (data.text) {
-                    document.getElementById('clip-input').value = data.text;
-                    // Try to copy to phone clipboard if permissions allow (often fails without user gesture)
-                    try { navigator.clipboard.writeText(data.text); } catch (e) { }
+        function startAutoType() {
+            if (autoTypeInterval) {
+                clearInterval(autoTypeInterval);
+                autoTypeInterval = null;
+            }
+
+            const text = autoInput.value;
+            if (!text) return;
+
+            let index = 0;
+            autoTypeInterval = setInterval(() => {
+                if (index < text.length) {
+                    const char = text[index];
+                    emit('command:type', { text: char });
+                    index++;
+                } else {
+                    clearInterval(autoTypeInterval);
+                    autoTypeInterval = null;
                 }
-            });
+            }, typingSpeed);
         }
         // Need to add listener inside connect() as well since socket is null here initially?
         // Actually, the listeners are lost on reconnect unless we move them.
