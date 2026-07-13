@@ -9,14 +9,12 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: #050508; min-height: 100vh; color: white; }
-        .glass { background: rgba(17,17,27,0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .glass { background: #11111b; border: 1px solid rgba(255,255,255,0.08); }
         input:focus, textarea:focus { outline: none; border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
         .btn-primary { background: linear-gradient(135deg, #3b82f6, #8b5cf6); transition: all 0.2s; }
-        .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 8px 25px rgba(59,130,246,0.35); }
+        .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
         .btn-premium { background: linear-gradient(135deg, #f59e0b, #d97706); transition: all 0.2s; }
-        .btn-premium:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 8px 25px rgba(245,158,11,0.35); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        .btn-premium:hover { filter: brightness(1.15); transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -39,13 +37,13 @@
 
         <div class="max-w-5xl mx-auto w-full flex-1 flex flex-col items-center justify-center">
             
-            <div class="text-center mb-10 fade-in">
+            <div class="text-center mb-10">
                 <h1 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-3">Choose Your RemoteLink Plan</h1>
                 <p class="text-sm md:text-base text-gray-400 max-w-xl mx-auto">Get unlimited session times, faster control speeds, and premium support by upgrading today.</p>
             </div>
 
             <!-- Grid of Plans -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mb-12 fade-in" style="animation-delay: 0.1s;">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mb-12">
                 
                 <!-- Free Plan Card -->
                 <div class="glass rounded-3xl p-8 flex flex-col border border-white/5 relative overflow-hidden">
@@ -114,8 +112,8 @@
 
             </div>
 
-            <!-- Upgrade Form Card (Initially hidden or scrolled to) -->
-            <div id="upgrade-section" class="glass rounded-3xl p-8 w-full max-w-xl mb-16 border border-white/15 fade-in" style="animation-delay: 0.2s;">
+            <!-- Upgrade Form Card -->
+            <div id="upgrade-section" class="glass rounded-3xl p-8 w-full max-w-xl mb-16 border border-white/15">
                 <h3 class="text-xl font-bold text-white text-center mb-2">Upgrade Request Form</h3>
                 <p class="text-xs text-gray-400 text-center mb-6">Enter your billing and payment details below. The admin will verify payment and reply with your Premium passkey.</p>
 
@@ -222,7 +220,6 @@
                     throw new Error(data.error || 'Failed to send request. Please try again.');
                 }
 
-                // Show detailed, professional response message to user as requested
                 succBox.innerHTML = `
                     <div class="text-left space-y-2">
                         <p class="font-bold text-sm text-green-400">✅ Request Sent Successfully!</p>
@@ -232,8 +229,6 @@
                 `;
                 succBox.classList.remove('hidden');
                 document.getElementById('upgrade-form').reset();
-                
-                // Scroll to top of the success box
                 succBox.scrollIntoView({ behavior: 'smooth' });
 
             } catch (err) {
