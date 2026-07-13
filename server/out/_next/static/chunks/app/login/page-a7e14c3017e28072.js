@@ -1,1 +1,1 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[520],{9690:function(e,t,r){"use strict";r.r(t);r.d(t,{default:function(){return c}});function c(){window.location.replace("/login.html");return null}}}]);
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[520],{}]);

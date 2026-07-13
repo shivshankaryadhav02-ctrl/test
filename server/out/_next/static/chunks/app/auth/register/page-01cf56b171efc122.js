@@ -1,1 +1,1 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[983],{6117:function(e,t,r){"use strict";r.r(t);r.d(t,{default:function(){return c}});function c(){window.location.replace("/register.html");return null}}}]);
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[984],{}]);
