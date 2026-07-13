@@ -3,134 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RemoteLink - Dashboard</title>
+    <title>RemoteLink — Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #050508; min-height: 100vh; color: white; }
+        .glass { background: rgba(17,17,27,0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        .stat-card { transition: all 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15) !important; }
     </style>
 </head>
-<body class="min-h-screen text-white bg-[#0a0a0a]">
-
-    <!-- Auth check: redirect to login.html if no token -->
-    <script>
-        (function() {
-            const token = localStorage.getItem('token') || localStorage.getItem('jarvis_token');
-            if (!token) {
-                window.location.replace('/login.html');
-            }
-        })();
-    </script>
-
-    <!-- Neon background -->
-    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" style="animation-duration:4s"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse" style="animation-duration:6s"></div>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" style="position:fixed;inset:0;background:#050508;z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+        <div style="width:48px;height:48px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(99,102,241,0.4);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+        </div>
+        <p style="font-size:0.8rem;color:#6b7280;">Verifying session...</p>
     </div>
 
-    <div class="relative z-10 flex flex-col min-h-screen">
+    <!-- Background -->
+    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;">
+        <div style="position:absolute;top:-5%;left:-5%;width:40%;height:40%;background:radial-gradient(circle,rgba(59,130,246,0.08),transparent 70%);border-radius:50%;"></div>
+        <div style="position:absolute;bottom:-5%;right:-5%;width:40%;height:40%;background:radial-gradient(circle,rgba(139,92,246,0.08),transparent 70%);border-radius:50%;"></div>
+    </div>
+
+    <div id="app" style="display:none;position:relative;z-index:10;min-height:100vh;flex-direction:column;">
+
         <!-- Top Nav -->
-        <nav class="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40 backdrop-blur">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+        <nav class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:34px;height:34px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(99,102,241,0.3);">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
                 </div>
-                <span class="font-bold text-white text-sm">RemoteLink</span>
-                <span id="plan-badge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600/30 text-blue-300 border border-blue-500/30 uppercase tracking-wider">Free</span>
+                <span style="font-size:0.95rem;font-weight:700;color:white;">RemoteLink</span>
+                <span id="plan-badge" style="font-size:0.65rem;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);text-transform:uppercase;letter-spacing:0.05em;">Free</span>
             </div>
-            <div class="flex items-center gap-3">
-                <span id="user-email" class="text-xs text-gray-400"></span>
-                <button onclick="logout()" class="text-xs text-red-400 hover:text-red-300 transition-colors border border-red-900/40 px-3 py-1.5 rounded-lg hover:bg-red-900/20">Logout</button>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span id="nav-name" style="font-size:0.8rem;color:#6b7280;"></span>
+                <button onclick="logout()" style="font-size:0.75rem;color:#ef4444;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);padding:6px 14px;border-radius:8px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+                    Logout
+                </button>
             </div>
         </nav>
 
-        <!-- Main Content -->
-        <main class="flex-1 p-6 max-w-4xl mx-auto w-full">
+        <!-- Main -->
+        <main style="flex:1;padding:24px;max-width:860px;margin:0 auto;width:100%;" class="fade-in">
 
-            <!-- Welcome Banner -->
-            <div id="welcome-banner" class="mb-6 bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5">
-                <h1 class="text-xl font-bold text-white mb-1">Welcome to RemoteLink 👋</h1>
-                <p class="text-sm text-gray-400">Control your PC from anywhere using your phone. Launch the desktop app to get started.</p>
-            </div>
-
-            <!-- Pairing Token Card -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="bg-[#111] border border-white/10 rounded-2xl p-5">
-                    <div class="flex items-center gap-2 mb-3">
-                        <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        </div>
-                        <span class="text-sm font-semibold text-white">Connection Status</span>
+            <!-- Welcome -->
+            <div style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(139,92,246,0.1));border:1px solid rgba(99,102,241,0.2);border-radius:20px;padding:24px;margin-bottom:20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <h1 style="font-size:1.2rem;font-weight:800;color:white;margin-bottom:4px;">Welcome back, <span id="welcome-name" style="color:#818cf8;">User</span> 👋</h1>
+                        <p style="font-size:0.8rem;color:#6b7280;">Your RemoteLink dashboard is ready. Connect your phone to control this PC.</p>
                     </div>
-                    <div id="status-indicator" class="flex items-center gap-2 text-sm">
-                        <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                        <span class="text-green-400">Server Online</span>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">Your account is active and ready for remote connections.</p>
-                </div>
-
-                <div class="bg-[#111] border border-white/10 rounded-2xl p-5">
-                    <div class="flex items-center gap-2 mb-3">
-                        <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-                        </div>
-                        <span class="text-sm font-semibold text-white">Your Plan</span>
-                    </div>
-                    <div id="plan-info" class="text-sm text-gray-300">Loading...</div>
-                    <div id="free-upgrade-hint" class="hidden mt-2">
-                        <button onclick="window.location.href='/subscription.html'" class="text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-700/40 px-3 py-1 rounded-lg hover:bg-yellow-900/20 transition-all">
-                            🏆 Upgrade to Premium
+                    <div id="free-upgrade-cta" style="display:none;">
+                        <button onclick="window.location.href='/subscription.html'" style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white;font-size:0.8rem;font-weight:700;padding:10px 18px;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(245,158,11,0.3);transition:all 0.2s;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                            ⭐ Upgrade to Premium
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- How to Use -->
-            <div class="bg-[#111] border border-white/10 rounded-2xl p-5 mb-6">
-                <h2 class="text-sm font-bold text-white mb-4">How to Connect</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="flex flex-col gap-2">
-                        <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold text-sm">1</div>
-                        <p class="text-xs text-gray-400">Open <strong class="text-white">Jarvis Remote.exe</strong> on the PC you want to control</p>
+            <!-- Stats Row -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
+                <div class="glass stat-card" style="border-radius:16px;padding:20px;">
+                    <div style="font-size:0.65rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Server Status</div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px #22c55e;animation:pulse 2s infinite;"></div>
+                        <span style="font-size:0.95rem;font-weight:600;color:#22c55e;">Online</span>
                     </div>
-                    <div class="flex flex-col gap-2">
-                        <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center text-purple-400 font-bold text-sm">2</div>
-                        <p class="text-xs text-gray-400">The app shows a <strong class="text-white">6-digit pairing token</strong></p>
+                </div>
+
+                <div class="glass stat-card" style="border-radius:16px;padding:20px;">
+                    <div style="font-size:0.65rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Your Plan</div>
+                    <div id="plan-display" style="font-size:0.95rem;font-weight:600;color:white;">—</div>
+                </div>
+
+                <div class="glass stat-card" style="border-radius:16px;padding:20px;">
+                    <div style="font-size:0.65rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Session Limit</div>
+                    <div id="session-limit" style="font-size:0.95rem;font-weight:600;color:white;">—</div>
+                </div>
+            </div>
+
+            <!-- How to Connect -->
+            <div class="glass" style="border-radius:20px;padding:24px;margin-bottom:20px;">
+                <h2 style="font-size:0.85rem;font-weight:700;color:white;margin-bottom:18px;text-transform:uppercase;letter-spacing:0.06em;">📱 How to Connect</h2>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="width:32px;height:32px;background:rgba(59,130,246,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#60a5fa;font-size:0.85rem;">1</div>
+                        <p style="font-size:0.78rem;color:#9ca3af;line-height:1.5;">Run <strong style="color:white;">Jarvis Remote.exe</strong> on the PC you want to control</p>
                     </div>
-                    <div class="flex flex-col gap-2">
-                        <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center text-green-400 font-bold text-sm">3</div>
-                        <p class="text-xs text-gray-400">Enter the token on your phone to start <strong class="text-white">remote control</strong></p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="width:32px;height:32px;background:rgba(139,92,246,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#a78bfa;font-size:0.85rem;">2</div>
+                        <p style="font-size:0.78rem;color:#9ca3af;line-height:1.5;">The app generates a <strong style="color:white;">6-digit pairing token</strong> on screen</p>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="width:32px;height:32px;background:rgba(34,197,94,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#4ade80;font-size:0.85rem;">3</div>
+                        <p style="font-size:0.78rem;color:#9ca3af;line-height:1.5;">Enter the token on your <strong style="color:white;">phone browser</strong> to start remote control</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Settings (Account Info) -->
-            <div class="bg-[#111] border border-white/10 rounded-2xl p-5">
-                <h2 class="text-sm font-bold text-white mb-4">Account</h2>
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center py-2 border-b border-white/5">
-                        <span class="text-xs text-gray-400">Email</span>
-                        <span id="acc-email" class="text-xs text-white">—</span>
+            <!-- Account Info -->
+            <div class="glass" style="border-radius:20px;padding:24px;">
+                <h2 style="font-size:0.85rem;font-weight:700;color:white;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.06em;">👤 Account Details</h2>
+                <div style="display:flex;flex-direction:column;gap:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <span style="font-size:0.78rem;color:#6b7280;">Full Name</span>
+                        <span id="acc-name" style="font-size:0.82rem;color:white;font-weight:500;">—</span>
                     </div>
-                    <div class="flex justify-between items-center py-2 border-b border-white/5">
-                        <span class="text-xs text-gray-400">Name</span>
-                        <span id="acc-name" class="text-xs text-white">—</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <span style="font-size:0.78rem;color:#6b7280;">Email</span>
+                        <span id="acc-email" style="font-size:0.82rem;color:white;font-weight:500;">—</span>
                     </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-xs text-gray-400">Plan</span>
-                        <span id="acc-plan" class="text-xs text-white">—</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;">
+                        <span style="font-size:0.78rem;color:#6b7280;">Plan</span>
+                        <span id="acc-plan" style="font-size:0.82rem;font-weight:600;">—</span>
                     </div>
                 </div>
             </div>
         </main>
 
         <!-- Footer -->
-        <footer class="py-4 text-center text-[10px] text-gray-600 font-mono tracking-wider uppercase border-t border-white/5">
+        <footer style="padding:16px;text-align:center;font-size:0.62rem;color:#374151;font-family:monospace;letter-spacing:0.1em;text-transform:uppercase;border-top:1px solid rgba(255,255,255,0.04);">
             Developed by Shiv Shankar Ydv
         </footer>
     </div>
 
     <script>
+        const API = 'https://remotelink-relay.onrender.com';
+
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('jarvis_token');
@@ -139,43 +145,65 @@
             window.location.replace('/login.html');
         }
 
-        // Load user info from server
-        async function loadUser() {
+        async function init() {
             const token = localStorage.getItem('token') || localStorage.getItem('jarvis_token');
             if (!token) return window.location.replace('/login.html');
 
             try {
-                const res = await fetch('/api/auth/me', {
+                const res = await fetch(API + '/api/auth/me', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                if (!res.ok) return logout();
+
+                if (!res.ok) {
+                    // Token invalid - force logout
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('jarvis_token');
+                    return window.location.replace('/login.html');
+                }
+
                 const data = await res.json();
                 const user = data.user;
+                const isPro = user.plan === 'pro';
 
-                document.getElementById('user-email').textContent = user.email || '';
-                document.getElementById('acc-email').textContent = user.email || '—';
+                // Populate UI
+                document.getElementById('welcome-name').textContent = user.name || user.email.split('@')[0];
+                document.getElementById('nav-name').textContent = user.email;
                 document.getElementById('acc-name').textContent = user.name || '—';
-                document.getElementById('acc-plan').textContent = user.plan === 'pro' ? '⭐ Premium' : '🆓 Free';
+                document.getElementById('acc-email').textContent = user.email;
 
-                const badge = document.getElementById('plan-badge');
-                const planInfo = document.getElementById('plan-info');
-                const freeHint = document.getElementById('free-upgrade-hint');
-
-                if (user.plan === 'pro') {
-                    badge.textContent = 'Premium';
-                    badge.className = 'text-[9px] font-bold px-2 py-0.5 rounded-full bg-yellow-600/30 text-yellow-300 border border-yellow-500/30 uppercase tracking-wider';
-                    planInfo.textContent = '⭐ Premium — Unlimited remote sessions';
+                if (isPro) {
+                    document.getElementById('plan-badge').textContent = 'Premium';
+                    document.getElementById('plan-badge').style.background = 'rgba(245,158,11,0.2)';
+                    document.getElementById('plan-badge').style.color = '#fbbf24';
+                    document.getElementById('plan-badge').style.borderColor = 'rgba(245,158,11,0.3)';
+                    document.getElementById('plan-display').textContent = '⭐ Premium';
+                    document.getElementById('plan-display').style.color = '#fbbf24';
+                    document.getElementById('session-limit').textContent = 'Unlimited';
+                    document.getElementById('session-limit').style.color = '#4ade80';
+                    document.getElementById('acc-plan').textContent = '⭐ Premium — Unlimited Sessions';
+                    document.getElementById('acc-plan').style.color = '#fbbf24';
                 } else {
-                    badge.textContent = 'Free';
-                    planInfo.textContent = '🆓 Free — 5 minutes per session';
-                    freeHint.classList.remove('hidden');
+                    document.getElementById('plan-display').textContent = '🆓 Free';
+                    document.getElementById('session-limit').textContent = '5 min / session';
+                    document.getElementById('session-limit').style.color = '#f87171';
+                    document.getElementById('acc-plan').textContent = '🆓 Free — 5 Minutes Per Session';
+                    document.getElementById('acc-plan').style.color = '#60a5fa';
+                    document.getElementById('free-upgrade-cta').style.display = 'block';
                 }
+
+                // Show app, hide loading
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+
             } catch (e) {
-                console.error('Failed to load user', e);
+                console.error(e);
+                // Network error - still show dashboard with stored info
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
             }
         }
 
-        loadUser();
+        init();
     </script>
 </body>
 </html>

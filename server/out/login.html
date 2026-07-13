@@ -3,144 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RemoteLink - Login</title>
-    <!-- Tailwind CSS -->
+    <title>RemoteLink — Sign In</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #050508; min-height: 100vh; }
+
+        .glow-blue  { box-shadow: 0 0 60px 10px rgba(59,130,246,0.15); }
+        .glow-purple{ box-shadow: 0 0 60px 10px rgba(139,92,246,0.15); }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
+        .float { animation: float 4s ease-in-out infinite; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease forwards; }
+
+        .glass {
+            background: rgba(17,17,27,0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        input:focus { outline: none; border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 8px 25px rgba(59,130,246,0.35); }
+        .btn-primary:active { transform: translateY(0); }
+
+        .plan-btn { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
+        .plan-btn.active-free { border-color: #3b82f6; background: rgba(59,130,246,0.15); }
+        .plan-btn.active-premium { border-color: #f59e0b; background: rgba(245,158,11,0.15); }
+
+        .passkey-input { letter-spacing: 0.3em; font-size: 1.1rem; text-align: center; font-weight: 700; }
     </style>
 </head>
-<body class="min-h-screen text-gray-100 flex items-center justify-center p-4 relative overflow-hidden">
-    <!-- Neon Gradients -->
-    <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse" style="animation-duration: 4s"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" style="animation-duration: 6s"></div>
+<body>
+    <!-- Ambient Background -->
+    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;">
+        <div style="position:absolute;top:-5%;left:-5%;width:45%;height:45%;background:radial-gradient(circle,rgba(59,130,246,0.12),transparent 70%);border-radius:50%;animation:float 6s ease-in-out infinite;"></div>
+        <div style="position:absolute;bottom:-5%;right:-5%;width:45%;height:45%;background:radial-gradient(circle,rgba(139,92,246,0.12),transparent 70%);border-radius:50%;animation:float 8s ease-in-out infinite reverse;"></div>
+        <div style="position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);width:30%;height:30%;background:radial-gradient(circle,rgba(99,102,241,0.06),transparent 70%);border-radius:50%;"></div>
     </div>
 
-    <!-- Login Card -->
-    <div class="w-full max-w-md relative z-10">
-        <div class="bg-[#111] border border-white/10 p-8 rounded-2xl shadow-2xl">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                </div>
-                <h1 class="text-2xl font-bold text-white">Welcome Back</h1>
-                <p class="text-gray-400 text-sm">Sign in to your RemoteLink account</p>
+    <div style="position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+
+        <!-- Logo -->
+        <div class="fade-in" style="text-align:center;margin-bottom:32px;">
+            <div class="float" style="width:64px;height:64px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 32px rgba(99,102,241,0.4);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
             </div>
+            <h1 style="font-size:1.5rem;font-weight:800;color:white;letter-spacing:-0.02em;">RemoteLink</h1>
+            <p style="font-size:0.8rem;color:#6b7280;margin-top:4px;">Control your PC from anywhere</p>
+        </div>
+
+        <!-- Card -->
+        <div class="glass fade-in" style="width:100%;max-width:420px;border-radius:24px;padding:36px;animation-delay:0.1s;">
+
+            <h2 style="font-size:1.3rem;font-weight:700;color:white;margin-bottom:4px;text-align:center;">Welcome Back</h2>
+            <p style="font-size:0.8rem;color:#6b7280;text-align:center;margin-bottom:28px;">Sign in to your RemoteLink account</p>
 
             <!-- Error Banner -->
-            <div id="error-banner" class="hidden mb-4 bg-red-900/50 border border-red-500 text-red-200 text-xs p-3 rounded-lg text-center"></div>
+            <div id="error-box" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:0.78rem;color:#fca5a5;text-align:center;"></div>
 
-            <form id="login-form" class="space-y-4">
-                <!-- Plan Selection Toggle -->
-                <div class="space-y-2">
-                    <label class="text-xs font-medium text-gray-400">Account Type</label>
-                    <div class="grid grid-cols-2 gap-2 bg-black/40 p-1 rounded-xl border border-white/5">
-                        <button type="button" id="btn-free" onclick="selectPlan('free')" class="py-2 text-xs font-bold rounded-lg transition-all bg-blue-600 text-white shadow-md">Free Account</button>
-                        <button type="button" id="btn-premium" onclick="selectPlan('premium')" class="py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white">Premium Account</button>
+            <!-- Plan Selector -->
+            <div style="margin-bottom:20px;">
+                <label style="font-size:0.72rem;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:10px;">Account Type</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(0,0,0,0.3);padding:6px;border-radius:14px;border:1px solid rgba(255,255,255,0.05);">
+                    <button type="button" id="btn-free" class="plan-btn active-free" onclick="selectPlan('free')" style="padding:10px;border-radius:10px;font-size:0.78rem;font-weight:600;color:white;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <span>🆓</span> Free
+                    </button>
+                    <button type="button" id="btn-premium" class="plan-btn" onclick="selectPlan('premium')" style="padding:10px;border-radius:10px;font-size:0.78rem;font-weight:600;color:#9ca3af;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <span>⭐</span> Premium
+                    </button>
+                </div>
+            </div>
+
+            <form id="login-form" onsubmit="submitLogin(event)">
+                <!-- Email -->
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:0.72rem;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:8px;">Email Address</label>
+                    <input type="email" id="email" required placeholder="name@example.com"
+                        style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 16px;color:white;font-size:0.9rem;transition:all 0.2s;"
+                        placeholder="name@example.com">
+                </div>
+
+                <!-- Password -->
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:0.72rem;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:8px;">Password</label>
+                    <div style="position:relative;">
+                        <input type="password" id="password" required placeholder="Enter your password"
+                            style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 16px;color:white;font-size:0.9rem;transition:all 0.2s;padding-right:48px;">
+                        <button type="button" onclick="togglePw()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6b7280;cursor:pointer;font-size:0.9rem;">👁</button>
                     </div>
                 </div>
 
-                <!-- Email Input -->
-                <div class="space-y-1">
-                    <label class="text-xs font-medium text-gray-400">Email Address</label>
-                    <input type="email" id="email" required placeholder="name@example.com" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition-all" />
+                <!-- Passkey (Premium only) -->
+                <div id="passkey-box" style="display:none;margin-bottom:16px;">
+                    <label style="font-size:0.72rem;font-weight:600;color:#f59e0b;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:8px;">⭐ 8-Digit Premium Passkey</label>
+                    <input type="text" id="passkey" maxlength="8" placeholder="• • • • • • • •"
+                        class="passkey-input"
+                        style="width:100%;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px 16px;color:#fbbf24;font-size:1.1rem;transition:all 0.2s;">
+                    <p style="font-size:0.7rem;color:#6b7280;margin-top:6px;">Enter the passkey provided by your administrator after payment.</p>
                 </div>
 
-                <!-- Password Input -->
-                <div class="space-y-1">
-                    <label class="text-xs font-medium text-gray-400">Password</label>
-                    <input type="password" id="password" required placeholder="Enter your password" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition-all" />
-                </div>
-
-                <!-- Passkey Input (Conditional) -->
-                <div id="passkey-container" class="space-y-1 hidden">
-                    <label class="text-xs font-medium text-gray-400">8-Digit Passkey</label>
-                    <input type="text" id="passkey" placeholder="Enter 8-digit key" maxlength="8" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition-all" />
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-blue-500/20 text-sm">
-                    Sign In
+                <!-- Submit -->
+                <button type="submit" id="submit-btn" class="btn-primary" style="width:100%;padding:14px;border-radius:12px;border:none;color:white;font-size:0.9rem;font-weight:700;cursor:pointer;margin-top:4px;">
+                    Sign In →
                 </button>
             </form>
 
-            <div class="mt-6 text-center text-xs text-gray-400">
-                Don't have an account? <a class="text-blue-400 hover:text-blue-300 font-medium transition-colors" href="/auth/register">Create one</a>
+            <div style="text-align:center;margin-top:20px;font-size:0.8rem;color:#6b7280;">
+                Don't have an account?
+                <a href="/register.html" style="color:#60a5fa;font-weight:500;text-decoration:none;margin-left:4px;">Create one</a>
             </div>
+        </div>
 
-            <!-- Footer Branding -->
-            <div class="mt-6 border-t border-white/5 pt-4 text-center text-[10px] text-gray-500 font-mono tracking-wider uppercase">
-                Developed by Shiv Shankar Ydv
-            </div>
+        <!-- Footer -->
+        <div style="margin-top:24px;font-size:0.65rem;color:#374151;font-family:monospace;letter-spacing:0.1em;text-transform:uppercase;">
+            Developed by Shiv Shankar Ydv
         </div>
     </div>
 
     <script>
+        const API = 'https://remotelink-relay.onrender.com';
         let selectedPlan = 'free';
+
+        // If already logged in and token is valid, go to dashboard
+        (async function() {
+            const token = localStorage.getItem('jarvis_token') || localStorage.getItem('token');
+            if (token) {
+                try {
+                    const r = await fetch(API + '/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (r.ok) return window.location.replace('/dashboard.html');
+                } catch(e) {}
+                // Invalid token - clear it
+                localStorage.removeItem('token');
+                localStorage.removeItem('jarvis_token');
+            }
+        })();
 
         function selectPlan(plan) {
             selectedPlan = plan;
             const btnFree = document.getElementById('btn-free');
             const btnPremium = document.getElementById('btn-premium');
-            const passkeyContainer = document.getElementById('passkey-container');
-            const passkeyInput = document.getElementById('passkey');
+            const passkeyBox = document.getElementById('passkey-box');
+            const passkey = document.getElementById('passkey');
 
             if (plan === 'free') {
-                btnFree.className = "py-2 text-xs font-bold rounded-lg transition-all bg-blue-600 text-white shadow-md";
-                btnPremium.className = "py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white";
-                passkeyContainer.classList.add('hidden');
-                passkeyInput.removeAttribute('required');
+                btnFree.className = 'plan-btn active-free';
+                btnFree.style.color = 'white';
+                btnPremium.className = 'plan-btn';
+                btnPremium.style.color = '#9ca3af';
+                passkeyBox.style.display = 'none';
+                passkey.removeAttribute('required');
             } else {
-                btnFree.className = "py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white";
-                btnPremium.className = "py-2 text-xs font-bold rounded-lg transition-all bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-md";
-                passkeyContainer.classList.remove('hidden');
-                passkeyInput.setAttribute('required', 'true');
+                btnFree.className = 'plan-btn';
+                btnFree.style.color = '#9ca3af';
+                btnPremium.className = 'plan-btn active-premium';
+                btnPremium.style.color = 'white';
+                passkeyBox.style.display = 'block';
+                passkey.setAttribute('required', 'required');
             }
         }
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const passkey = document.getElementById('passkey').value;
-            const errorBanner = document.getElementById('error-banner');
+        function togglePw() {
+            const pw = document.getElementById('password');
+            pw.type = pw.type === 'password' ? 'text' : 'password';
+        }
 
-            errorBanner.classList.add('hidden');
-            errorBanner.innerText = '';
+        function showError(msg) {
+            const box = document.getElementById('error-box');
+            box.textContent = msg;
+            box.style.display = 'block';
+        }
+
+        async function submitLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const errorBox = document.getElementById('error-box');
+            errorBox.style.display = 'none';
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const passkey = document.getElementById('passkey').value.trim();
+
+            btn.textContent = 'Signing in...';
+            btn.disabled = true;
 
             try {
-                const response = await fetch('/api/auth/login', {
+                const res = await fetch(API + '/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password, passkey, planSelection: selectedPlan })
                 });
+                const data = await res.json();
 
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.error || 'Login failed');
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'Login failed. Please check your credentials.');
                 }
 
                 // Save token
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('jarvis_token', data.token);
-                document.cookie = "token=" + data.token + "; path=/";
-                document.cookie = "jarvis_token=" + data.token + "; path=/";
-
-                // Save selected plan type in session storage for mobile connection
                 sessionStorage.setItem('plan_selection', selectedPlan);
+                document.cookie = 'token=' + data.token + '; path=/';
+                document.cookie = 'jarvis_token=' + data.token + '; path=/';
 
-                window.location.href = '/dashboard';
+                window.location.replace('/dashboard.html');
             } catch (err) {
-                errorBanner.innerText = err.message;
-                errorBanner.classList.remove('hidden');
+                showError(err.message);
+                btn.textContent = 'Sign In →';
+                btn.disabled = false;
             }
-        });
+        }
     </script>
 </body>
 </html>
