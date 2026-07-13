@@ -202,4 +202,69 @@ router.post('/confirm-payment', async (req, res) => {
   }
 });
 
+// ─── REQUEST UPGRADE (client fills form → admin gets notified via email) ─────
+router.post('/request-upgrade', async (req, res) => {
+  try {
+    const { name, email, phone, plan, message } = req.body;
+    if (!name || !email || !phone) {
+      return res.status(400).json({ error: 'Name, email and phone are required' });
+    }
+
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'yadhavshiva259@gmail.com',
+        pass: '2026@Shiva'
+      }
+    });
+
+    // Email to Admin (you)
+    await transporter.sendMail({
+      from: '"RemoteLink System" <yadhavshiva259@gmail.com>',
+      to: 'shivshankaryadhav02@gmail.com',
+      subject: `🔔 New Premium Upgrade Request — ${name}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:auto;background:#0f0f0f;color:#fff;padding:32px;border-radius:16px;border:1px solid #1f2937;">
+          <h2 style="color:#3b82f6;margin-bottom:4px;">🔔 New Upgrade Request</h2>
+          <p style="color:#6b7280;font-size:0.85rem;margin-bottom:24px;">A client has requested Premium access. Review and approve below.</p>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:10px 0;border-bottom:1px solid #1f2937;color:#9ca3af;font-size:0.8rem;width:40%;">Client Name</td><td style="padding:10px 0;border-bottom:1px solid #1f2937;color:#fff;font-weight:600;">${name}</td></tr>
+            <tr><td style="padding:10px 0;border-bottom:1px solid #1f2937;color:#9ca3af;font-size:0.8rem;">Email</td><td style="padding:10px 0;border-bottom:1px solid #1f2937;color:#fff;font-weight:600;">${email}</td></tr>
+            <tr><td style="padding:10px 0;border-bottom:1px solid #1f2937;color:#9ca3af;font-size:0.8rem;">Phone</td><td style="padding:10px 0;border-bottom:1px solid #1f2937;color:#fff;font-weight:600;">${phone}</td></tr>
+            <tr><td style="padding:10px 0;border-bottom:1px solid #1f2937;color:#9ca3af;font-size:0.8rem;">Requested Plan</td><td style="padding:10px 0;border-bottom:1px solid #1f2937;"><span style="background:#f59e0b22;color:#fbbf24;padding:3px 10px;border-radius:20px;font-size:0.8rem;font-weight:700;">⭐ ${plan || 'Premium'}</span></td></tr>
+            ${message ? `<tr><td style="padding:10px 0;color:#9ca3af;font-size:0.8rem;">Message</td><td style="padding:10px 0;color:#d1d5db;">${message}</td></tr>` : ''}
+          </table>
+          <div style="margin-top:24px;padding:16px;background:#1f2937;border-radius:10px;font-size:0.8rem;color:#9ca3af;">
+            <strong style="color:#fff;">To approve:</strong> Log in to MongoDB Atlas, find user <code style="color:#60a5fa;">${email}</code>, set <code style="color:#4ade80;">plan → "pro"</code> and add their <code style="color:#fbbf24;">passkey</code>, then reply to the client.
+          </div>
+        </div>
+      `
+    });
+
+    // Confirmation email to client
+    await transporter.sendMail({
+      from: '"RemoteLink Support" <yadhavshiva259@gmail.com>',
+      to: email,
+      subject: 'RemoteLink — Upgrade Request Received ✅',
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:auto;background:#0f0f0f;color:#fff;padding:32px;border-radius:16px;border:1px solid #1f2937;">
+          <h2 style="color:#3b82f6;">Hi ${name}! 👋</h2>
+          <p style="color:#d1d5db;line-height:1.7;">Thank you for your interest in <strong>RemoteLink Premium</strong>. We have received your upgrade request.</p>
+          <div style="background:#1f2937;border-radius:12px;padding:16px;margin:20px 0;">
+            <p style="color:#9ca3af;font-size:0.85rem;margin:0;">Our admin will review your request and contact you at <strong style="color:#60a5fa;">${email}</strong> or <strong style="color:#60a5fa;">${phone}</strong> within <strong style="color:#fff;">24 hours</strong> with your passkey and payment confirmation.</p>
+          </div>
+          <p style="color:#6b7280;font-size:0.8rem;">If you have any questions, you can contact us directly.</p>
+          <p style="color:#6b7280;font-size:0.75rem;margin-top:24px;border-top:1px solid #1f2937;padding-top:16px;">— RemoteLink Team · Developed by Shiv Shankar Ydv</p>
+        </div>
+      `
+    });
+
+    res.json({ success: true, message: 'Upgrade request sent! Please wait for admin response within 24 hours.' });
+  } catch (err) {
+    console.error('[Upgrade] Request error:', err);
+    res.status(500).json({ error: 'Failed to send upgrade request. Please try again.' });
+  }
+});
+
 module.exports = router;
