@@ -255,7 +255,7 @@ router.post('/request-upgrade', async (req, res) => {
             <p style="color:#9ca3af;font-size:0.85rem;margin:0;">Our admin will review your request and contact you at <strong style="color:#60a5fa;">${email}</strong> or <strong style="color:#60a5fa;">${phone}</strong> within <strong style="color:#fff;">24 hours</strong> with your passkey and payment confirmation.</p>
           </div>
           <p style="color:#6b7280;font-size:0.8rem;">If you have any questions, you can contact us directly.</p>
-          <p style="color:#6b7280;font-size:0.75rem;margin-top:24px;border-top:1px solid #1f2937;padding-top:16px;">— RemoteLink Team · Developed by Shiv Shankar Ydv</p>
+          <p style="color:#6b7280;font-size:0.75rem;margin-top:24px;border-top:1px solid #1f2937;padding-top:16px;">— RemoteLink Team · Developed by Shiv Shankar</p>
         </div>
       `
     });
