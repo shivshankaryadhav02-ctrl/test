@@ -135,13 +135,7 @@
     <!-- MAIN INTERFACE -->
     <div id="deck-screen" class="hidden flex-col h-full gap-2">
 
-        <!-- TIMER BANNER (Conditional) -->
-        <div id="timer-banner" class="hidden flex items-center justify-between bg-red-950/60 border border-red-900/40 p-2 rounded-lg">
-            <span class="text-xs text-red-400 font-bold flex items-center gap-1">
-                ⏱️ FREE SESSION ACTIVE
-            </span>
-            <span id="countdown-clock" class="text-sm font-mono font-bold text-red-400">05:00</span>
-        </div>
+        <!-- TIMER BANNER Removed -->
 
         <!-- TOOLBAR -->
         <div class="flex justify-between items-center bg-gray-900 p-2 rounded-lg gap-2">
@@ -235,17 +229,8 @@
                 onclick="emit('command:click', {button:'right'})">R-CLICK</button>
         </div>
 
-        <!-- FOOTER BRANDING & UPGRADE -->
-        <div id="free-footer" class="hidden flex flex-col items-center gap-2 mt-2">
-            <button onclick="window.location.href='/subscription'" 
-                class="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-bold text-xs rounded-xl shadow-lg transition-all animate-pulse">
-                🏆 UPGRADE TO PREMIUM
-            </button>
-            <div class="text-[9px] text-gray-600 font-mono tracking-wider uppercase">
-                Developed by Shiv Shankar
-            </div>
-        </div>
-        <div id="premium-footer" class="hidden flex flex-col items-center mt-2">
+        <!-- FOOTER BRANDING -->
+        <div class="flex flex-col items-center mt-2">
             <div class="text-[9px] text-gray-600 font-mono tracking-wider uppercase">
                 Developed by Shiv Shankar
             </div>
@@ -363,54 +348,12 @@
             // Handle Session Plan selection
             let countdownInterval = null;
             socket.on('session-plan', (data) => {
-                const plan = data.plan || 'free';
-                const timerBanner = document.getElementById('timer-banner');
-                const freeFooter = document.getElementById('free-footer');
-                const premiumFooter = document.getElementById('premium-footer');
-
-                if (plan === 'premium') {
-                    timerBanner.classList.add('hidden');
-                    freeFooter.classList.add('hidden');
-                    premiumFooter.classList.remove('hidden');
-                    if (countdownInterval) clearInterval(countdownInterval);
-                } else {
-                    timerBanner.classList.remove('hidden');
-                    freeFooter.classList.remove('hidden');
-                    premiumFooter.classList.add('hidden');
-                    
-                    // Start 5-minute visual countdown clock
-                    let remaining = 5 * 60;
-                    const clock = document.getElementById('countdown-clock');
-                    if (countdownInterval) clearInterval(countdownInterval);
-                    countdownInterval = setInterval(() => {
-                        if (remaining > 0) {
-                            remaining--;
-                            const mins = Math.floor(remaining / 60).toString().padStart(2, '0');
-                            const secs = (remaining % 60).toString().padStart(2, '0');
-                            clock.innerText = mins + ":" + secs;
-                        } else {
-                            clearInterval(countdownInterval);
-                        }
-                    }, 1000);
-                }
+                // All sessions are premium — no timer needed
             });
 
-            // Handle Session Expiration
+            // Session expiration disabled
             socket.on('session-expired', () => {
-                if (countdownInterval) clearInterval(countdownInterval);
-                const overlay = document.getElementById('approval-overlay');
-                overlay.innerHTML = `
-                    <div class="text-center p-6 bg-red-950/90 border border-red-500/50 rounded-2xl max-w-xs mx-auto shadow-2xl">
-                        <span class="text-4xl">⏱️</span>
-                        <h2 class="text-lg font-bold text-red-200 mt-2">Free Session Expired</h2>
-                        <p class="text-xs text-gray-400 mt-2">Your 5-minute free remote control session has ended.</p>
-                        <button onclick="window.location.href='/subscription'" 
-                            class="mt-4 w-full py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-bold text-xs rounded-xl shadow-lg">
-                            UPGRADE TO PREMIUM
-                        </button>
-                    </div>
-                `;
-                overlay.classList.remove('hidden');
+                // No-op: premium sessions don't expire
             });
 
             socket.on('mic:data', (data) => {

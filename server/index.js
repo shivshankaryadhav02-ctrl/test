@@ -335,27 +335,7 @@ if (MONGODB_URI) {
 }
 
 function getSessionPlanFromSocket(socket) {
-  try {
-    const cookieHeader = socket.handshake.headers.cookie;
-    if (!cookieHeader) return 'free';
-
-    const cookies = {};
-    cookieHeader.split(';').forEach(c => {
-      const parts = c.split('=');
-      if (parts.length === 2) {
-        cookies[parts[0].trim()] = parts[1].trim();
-      }
-    });
-
-    const token = cookies['token'] || cookies['jarvis_token'];
-    if (!token) return 'free';
-
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded.sessionPlan || 'free';
-  } catch (e) {
-    return 'free';
-  }
+  return 'premium';
 }
 
 module.exports = { app, io };
