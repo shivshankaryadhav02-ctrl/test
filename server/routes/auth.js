@@ -171,13 +171,13 @@ router.post('/confirm-payment', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'yadhavshiva259@gmail.com',
-        pass: '2026@Shiva'
+        user: 'rcsupportofficial@gmail.com',
+        pass: '2026@Shiv'
       }
     });
 
     const mailOptions = {
-      from: '"RemoteLink Support" <yadhavshiva259@gmail.com>',
+      from: '"RemoteLink Support" <rcsupportofficial@gmail.com>',
       to: user.email,
       subject: 'Payment Confirmation - RemoteLink Premium',
       text: `Hello ${user.name || 'Valued Client'},\n\nWe have successfully received your payment! Your account has been upgraded to Premium.\n\nYou can now log in using the "Premium Account" option to enjoy unlimited remote control sessions.\n\nThank you for choosing RemoteLink!\n\nBest regards,\nRemoteLink Team`,
@@ -214,14 +214,14 @@ router.post('/request-upgrade', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'yadhavshiva259@gmail.com',
-        pass: '2026@Shiva'
+        user: 'rcsupportofficial@gmail.com',
+        pass: '2026@Shiv'
       }
     });
 
     // Email to Admin (you)
     await transporter.sendMail({
-      from: '"RemoteLink System" <yadhavshiva259@gmail.com>',
+      from: '"RemoteLink System" <rcsupportofficial@gmail.com>',
       to: 'shivshankaryadhav02@gmail.com',
       subject: `🔔 New Premium Upgrade Request — ${name}`,
       html: `
@@ -244,7 +244,7 @@ router.post('/request-upgrade', async (req, res) => {
 
     // Confirmation email to client
     await transporter.sendMail({
-      from: '"RemoteLink Support" <yadhavshiva259@gmail.com>',
+      from: '"RemoteLink Support" <rcsupportofficial@gmail.com>',
       to: email,
       subject: 'RemoteLink — Upgrade Request Received ✅',
       html: `
