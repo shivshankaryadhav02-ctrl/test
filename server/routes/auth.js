@@ -172,7 +172,7 @@ router.post('/confirm-payment', async (req, res) => {
       service: 'gmail',
       auth: {
         user: 'rcsupportofficial@gmail.com',
-        pass: '2026@Shiv'
+        pass: 'xazh abhz uzmr vzly'
       }
     });
 
@@ -215,7 +215,7 @@ router.post('/request-upgrade', async (req, res) => {
       service: 'gmail',
       auth: {
         user: 'rcsupportofficial@gmail.com',
-        pass: '2026@Shiv'
+        pass: 'xazh abhz uzmr vzly'
       }
     });
 

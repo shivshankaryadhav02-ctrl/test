@@ -285,7 +285,7 @@ app.post('/api/send-link', async (req, res) => {
         service: 'gmail',
         auth: {
           user: 'rcsupportofficial@gmail.com',
-          pass: '2026@Shiv'
+          pass: 'xazh abhz uzmr vzly'
         },
         connectionTimeout: 8000,
         greetingTimeout: 8000,
