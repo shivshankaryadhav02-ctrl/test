@@ -266,6 +266,76 @@ app.post('/api/device/link', async (req, res) => {
   res.json({ success: true, message: 'Device linked' });
 });
 
+// ─── SEND PAIRING LINK TO USER ────────────────────────────────────────────────
+// Called by the desktop app when user clicks "Send" in the "SEND LINK TO USER" panel.
+// Sends an email to the target user containing the pairing URL.
+app.post('/api/send-link', async (req, res) => {
+  try {
+    const { fromEmail, toEmail, connectUrl } = req.body;
+
+    if (!toEmail || !connectUrl) {
+      return res.status(400).json({ success: false, error: 'toEmail and connectUrl are required' });
+    }
+
+    const nodemailer = require('nodemailer');
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'rcsupportofficial@gmail.com',
+        pass: '2026@Shiv'
+      }
+    });
+
+    const mailOptions = {
+      from: '"RemoteLink" <rcsupportofficial@gmail.com>',
+      to: toEmail,
+      subject: '🔗 RemoteLink — Someone shared a remote access link with you',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #222;">
+          <div style="background: linear-gradient(135deg, #1a1aff 0%, #6b21a8 100%); padding: 32px; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px;">🖥️ RemoteLink</h1>
+            <p style="margin: 8px 0 0; color: rgba(255,255,255,0.7); font-size: 14px;">Secure Remote Access</p>
+          </div>
+          <div style="padding: 32px;">
+            <h2 style="color: #fff; font-size: 20px; margin-top: 0;">You've received a remote access link!</h2>
+            <p style="color: #9ca3af; line-height: 1.6;">
+              ${fromEmail ? `<strong style="color: #60a5fa;">${fromEmail}</strong> has shared` : 'Someone has shared'} a RemoteLink pairing link with you.
+              Click the button below to connect to their desktop from your phone's browser.
+            </p>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${connectUrl}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">
+                📱 Open Remote Session
+              </a>
+            </div>
+
+            <div style="background: #111; border: 1px solid #333; border-radius: 10px; padding: 16px; margin-top: 24px;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0 0 8px;">If the button doesn't work, copy this link into your phone's browser:</p>
+              <code style="color: #60a5fa; font-size: 11px; word-break: break-all;">${connectUrl}</code>
+            </div>
+
+            <p style="color: #4b5563; font-size: 12px; margin-top: 24px; text-align: center;">
+              ⚠️ Only open this link if you trust the sender. This link grants screen view access.
+            </p>
+          </div>
+          <div style="background: #111; padding: 16px; text-align: center; border-top: 1px solid #222;">
+            <p style="color: #374151; font-size: 11px; margin: 0;">RemoteLink · Secure Remote Control · Do not reply to this email.</p>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`[send-link] ✅ Link sent from ${fromEmail || 'unknown'} → ${toEmail}`);
+    res.json({ success: true, message: `Link sent to ${toEmail}` });
+
+  } catch (err) {
+    console.error('[send-link] ❌ Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // /validate-trial — always return active (no trial limits)
 app.get('/validate-trial', (req, res) => {
   res.json({ success: true, status: 'active', plan: 'free', daysRemaining: 999 });
