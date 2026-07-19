@@ -351,6 +351,46 @@ app.post('/validate-trial', (req, res) => {
   res.json({ success: true, status: 'active', plan: 'free', daysRemaining: 999 });
 });
 
+// ─── AI CONFIG SYNC (Interview Assistant) ─────────────────
+const aiConfigs = {}; // In-memory store (keyed by email)
+
+app.post('/api/user/ai-config', (req, res) => {
+  try {
+    const { email, config } = req.body;
+    if (!email || !config) {
+      return res.status(400).json({ success: false, error: 'Missing email or config' });
+    }
+    aiConfigs[email] = {
+      provider: config.provider,
+      apiKey: config.apiKey,
+      resumeText: config.resumeText || '',
+      resumeName: config.resumeName || '',
+      updatedAt: new Date().toISOString()
+    };
+    console.log(`[AI Config] Saved config for ${email} (provider: ${config.provider})`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/user/ai-config', (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Missing email parameter' });
+    }
+    const config = aiConfigs[email];
+    if (config) {
+      res.json({ success: true, config });
+    } else {
+      res.json({ success: true, config: null });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 const path = require('path');
 // Serve Next.js exported static assets (JS, CSS, images)
 app.use(express.static(path.join(__dirname, 'out')));
