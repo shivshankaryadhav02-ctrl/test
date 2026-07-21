@@ -261,9 +261,37 @@ app.get('/api/user/status', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email required' });
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ success: true, plan: user.plan || 'free', status: 'active', email: user.email, name: user.name });
+    res.json({
+      success: true,
+      plan: user.plan || 'free',
+      status: 'active',
+      email: user.email,
+      name: user.name,
+      geminiKey: user.geminiKey || null,
+      chatgptKey: user.chatgptKey || null,
+      grokKey: user.grokKey || null
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// /api/user/update-api-keys — update API keys in database
+app.post('/api/user/update-api-keys', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const User = require('./models/User');
+    const { email, gemini, chatgpt, grok } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    user.geminiKey = gemini;
+    user.chatgptKey = chatgpt;
+    user.grokKey = grok;
+    await user.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error: ' + err.message });
   }
 });
 

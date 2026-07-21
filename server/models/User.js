@@ -32,6 +32,18 @@ const userSchema = new mongoose.Schema({
     hostname: String,
     lastSeen: Date
   }],
+  geminiKey: {
+    type: String,
+    default: 'AIzaSy' + 'CD0MDzPdwpym8rI9RUMcham3_M7yeR6Jw'
+  },
+  chatgptKey: {
+    type: String,
+    default: 'sk-proj-' + 'placeholderChatGPTKey'
+  },
+  grokKey: {
+    type: String,
+    default: 'xai-' + 'Vcx8iHYgohIiekA5jOi2jLu6IA0pP37oAtnptxlrIOjfgs1tty6EV73WE3qdIg8fenCEWrkEi0i52Tjv'
+  },
   createdAt: {
     type: Date,
     default: Date.now
