@@ -56,6 +56,12 @@ io.on('connection', (socket) => {
     const session = sessions.get(token);
 
     if (type === 'desktop') {
+      // Prevent multiple desktops/PCs from using the same login account simultaneously
+      if (session.desktop && session.desktop.id !== socket.id) {
+        console.log(`[Relay] Conflict detected for token ${token}. Disconnecting previous desktop socket ${session.desktop.id}`);
+        session.desktop.emit('relay:conflict', { message: 'This account has been logged in on another device.' });
+        session.desktop.disconnect(true);
+      }
       session.desktop = socket;
       session.plan = getSessionPlanFromSocket(socket); // Determine plan: 'free' or 'premium'
       socket.emit('identified', { status: 'connected', token });
