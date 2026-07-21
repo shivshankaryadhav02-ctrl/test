@@ -34,15 +34,15 @@ const userSchema = new mongoose.Schema({
   }],
   geminiKey: {
     type: String,
-    default: 'AIzaSy' + 'CD0MDzPdwpym8rI9RUMcham3_M7yeR6Jw'
+    default: 'AIzaSy' + 'ExamplePlaceholderGeminiAPIKey'
   },
   chatgptKey: {
     type: String,
-    default: 'sk-proj-' + 'placeholderChatGPTKey'
+    default: 'sk-proj-' + 'ExamplePlaceholderChatGPTAPIKey'
   },
   grokKey: {
     type: String,
-    default: 'xai-' + 'Vcx8iHYgohIiekA5jOi2jLu6IA0pP37oAtnptxlrIOjfgs1tty6EV73WE3qdIg8fenCEWrkEi0i52Tjv'
+    default: 'xai-' + 'ExamplePlaceholderGrokAPIKey'
   },
   createdAt: {
     type: Date,
