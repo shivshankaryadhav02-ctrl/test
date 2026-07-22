@@ -670,11 +670,10 @@
         }
 
         hiddenInput.addEventListener('input', (e) => {
-            if (e.data) {
-                emit('command:type', { text: e.data });
+            const txt = e.data || hiddenInput.value;
+            if (txt) {
+                emit('command:type', { text: txt });
             }
-            // Don't clear immediately for backspace tracking? 
-            // Actually, keep it simple.
             hiddenInput.value = '';
         });
 
