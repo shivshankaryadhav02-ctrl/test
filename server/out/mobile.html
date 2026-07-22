@@ -149,12 +149,10 @@
                     class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🎤</span><span>MIC</span></button>
             </div>
 
-            <!-- Media Controls -->
+            <!-- Media Controls (Volume Down / Up) -->
             <div class="flex gap-1">
                 <button onclick="emit('command:media', {action:'voldown'})"
                     class="p-2 bg-gray-800 rounded text-white text-xs w-8 active:bg-blue-600">-</button>
-                <button onclick="emit('command:media', {action:'playpause'})"
-                    class="p-2 bg-blue-700 rounded text-white text-xs w-12 font-bold active:bg-blue-500">⏯</button>
                 <button onclick="emit('command:media', {action:'volup'})"
                     class="p-2 bg-gray-800 rounded text-white text-xs w-8 active:bg-blue-600">+</button>
             </div>
@@ -232,7 +230,7 @@
         </div>
 
         <!-- MOBILE REMOTE KEYBOARD DRAWER -->
-        <div id="keyboard-drawer" class="hidden flex-col gap-2 bg-gray-900 border border-gray-700 p-2 rounded-lg text-xs">
+        <div id="keyboard-drawer" class="flex flex-col gap-2 bg-gray-900 border border-gray-700 p-2 rounded-lg text-xs">
             <!-- Row 1: Nav & Special Keys -->
             <div class="grid grid-cols-6 gap-1">
                 <button onclick="emit('command:key', {key:'escape'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-red-400 font-bold">ESC</button>
