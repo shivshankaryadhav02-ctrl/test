@@ -371,8 +371,15 @@
                 document.getElementById('deck-screen').classList.remove('hidden');
                 document.getElementById('deck-screen').classList.add('flex');
 
-                // Show Security Wall until approved
-                document.getElementById('approval-overlay').classList.remove('hidden');
+                // 🚀 Send identify to relay hub so desktop pairs immediately
+                socket.emit('identify', {
+                    type: 'mobile',
+                    pairingToken: inputVal,
+                    deviceId: deviceId
+                });
+
+                // Auto-hide security wall once identified
+                document.getElementById('approval-overlay').classList.add('hidden');
 
                 startStream();
             });
