@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>RemoteLink Touch</title>
+    <title>Jarvis Touch</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RemoteLink">
+    <meta name="apple-mobile-web-app-title" content="Jarvis">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -122,7 +122,7 @@
 
     <!-- LOGIN -->
     <div id="login-screen" class="flex flex-col items-center justify-center h-full space-y-4">
-        <h1 class="text-3xl font-bold text-blue-500">RemoteLink Touch</h1>
+        <h1 class="text-3xl font-bold text-blue-500">Jarvis Touch</h1>
         <p class="text-gray-400 text-xs px-8 text-center">Enter the Scan Token or a Manual Passcode</p>
         <input type="password" id="token-input" placeholder="Passcode (Default: 123456)"
             class="bg-gray-800 p-3 rounded text-white text-center w-64 border border-gray-700 focus:border-blue-500 outline-none">
@@ -134,8 +134,6 @@
 
     <!-- MAIN INTERFACE -->
     <div id="deck-screen" class="hidden flex-col h-full gap-2">
-
-        <!-- TIMER BANNER Removed -->
 
         <!-- TOOLBAR -->
         <div class="flex justify-between items-center bg-gray-900 p-2 rounded-lg gap-2">
@@ -153,40 +151,32 @@
 
             <!-- Media Controls -->
             <div class="flex gap-1">
-                <button onclick="emit('command:key', {key:'volumedown'})"
+                <button onclick="emit('command:media', {action:'voldown'})"
                     class="p-2 bg-gray-800 rounded text-white text-xs w-8 active:bg-blue-600">-</button>
-                <button onclick="emit('command:key', {key:'volumeup'})"
+                <button onclick="emit('command:media', {action:'playpause'})"
+                    class="p-2 bg-blue-700 rounded text-white text-xs w-12 font-bold active:bg-blue-500">⏯</button>
+                <button onclick="emit('command:media', {action:'volup'})"
                     class="p-2 bg-gray-800 rounded text-white text-xs w-8 active:bg-blue-600">+</button>
             </div>
         </div>
 
-        <!-- REALTIME TYPING TOOLBAR -->
+        <!-- CLIPBOARD TOOLBAR -->
         <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
-            <span class="text-xs text-gray-500">⚡</span>
-            <input id="clip-input" type="text" placeholder="Type here in Realtime..."
+            <span class="text-xs text-gray-500">📋</span>
+            <input id="clip-input" type="text" placeholder="Sync Text..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button onclick="clearTypeBox()"
-                class="p-2 bg-red-900/50 text-red-400 border border-red-900 rounded text-[10px] font-bold active:bg-red-800">CLEAR</button>
-        </div>
-
-        <!-- AUTO TYPER TOOLBAR -->
-        <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2 mt-1">
-            <span class="text-xs text-gray-500">🤖</span>
-            <input id="auto-input" type="text" placeholder="Paste text to Auto-Type..."
-                class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button onclick="startAutoType()"
-                class="p-2 bg-blue-900/50 text-blue-400 border border-blue-900 rounded text-[10px] font-bold active:bg-blue-800">AUTO TYPE</button>
-            <button onclick="adjustSpeed(-1)"
-                class="p-2 bg-gray-800 text-gray-300 rounded text-[10px] font-bold active:bg-gray-700">SPEED -</button>
-            <span id="speed-label" class="text-[10px] text-gray-400 font-mono w-10 text-center">50ms</span>
-            <button onclick="adjustSpeed(1)"
-                class="p-2 bg-gray-800 text-gray-300 rounded text-[10px] font-bold active:bg-gray-700">SPEED +</button>
+            <button onclick="sendClipboard()"
+                class="p-2 bg-blue-900/50 text-blue-400 border border-blue-900 rounded text-[10px] font-bold active:bg-blue-800">TO
+                PC</button>
+            <button onclick="getClipboard()"
+                class="p-2 bg-green-900/50 text-green-400 border border-green-900 rounded text-[10px] font-bold active:bg-green-800">FROM
+                PC</button>
         </div>
 
         <!-- TOUCH AREA (SCREEN) with Waiting Message -->
-        <div id="trackpad-area" class="relative bg-gray-900 border border-gray-700 w-full overflow-hidden">
+        <div id="trackpad-area" class="flex-1 relative bg-gray-900 border border-gray-700">
             <!-- Video Feed -->
-            <img id="peek-img" src="" class="w-full h-auto block opacity-50"
+            <img id="peek-img" src="" class="absolute inset-0 w-full h-full object-contain opacity-50"
                 alt="Screen Stream"
                 onerror="this.style.opacity=0; document.getElementById('lock-overlay').classList.remove('hidden');"
                 onload="this.style.opacity=1; document.getElementById('lock-overlay').classList.add('hidden');" />
@@ -224,24 +214,81 @@
         <!-- MOUSE BUTTONS -->
         <div class="grid grid-cols-2 gap-2 h-16">
             <button class="bg-gray-800 rounded active:bg-blue-600 font-bold text-gray-400"
+                ontouchstart="emit('command:click', {button:'left'}); navigator.vibrate(10);"
                 onclick="emit('command:click', {button:'left'})">L-CLICK</button>
             <button class="bg-gray-800 rounded active:bg-blue-600 font-bold text-gray-400"
+                ontouchstart="emit('command:click', {button:'right'}); navigator.vibrate(10);"
                 onclick="emit('command:click', {button:'right'})">R-CLICK</button>
         </div>
 
-        <!-- FOOTER BRANDING -->
-        <div class="flex flex-col items-center mt-2">
-            <div class="text-[9px] text-gray-600 font-mono tracking-wider uppercase">
-                Developed by Shiv Shankar
+        <!-- MOBILE REMOTE KEYBOARD DRAWER -->
+        <div id="keyboard-drawer" class="hidden flex-col gap-2 bg-gray-900 border border-gray-700 p-2 rounded-lg text-xs">
+            <!-- Row 1: Nav & Special Keys -->
+            <div class="grid grid-cols-6 gap-1">
+                <button onclick="emit('command:key', {key:'escape'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-red-400 font-bold">ESC</button>
+                <button onclick="emit('command:key', {key:'tab'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-blue-400 font-bold">TAB</button>
+                <button onclick="emit('command:key', {key:'space'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-gray-200 font-bold">SPACE</button>
+                <button onclick="emit('command:key', {key:'capslock'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-yellow-400 font-bold">CAPS</button>
+                <button onclick="emit('command:key', {key:'backspace'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-red-600 p-2 rounded text-red-300 font-bold">⌫ BACK</button>
+                <button onclick="emit('command:key', {key:'enter'}); navigator.vibrate(10);" class="bg-blue-700 hover:bg-blue-600 active:bg-blue-500 p-2 rounded text-white font-bold">↵ ENTER</button>
+            </div>
+
+            <!-- Row 2: Arrow Navigation & Editing -->
+            <div class="grid grid-cols-7 gap-1 text-center">
+                <button onclick="emit('command:key', {key:'left'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">←</button>
+                <button onclick="emit('command:key', {key:'up'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">↑</button>
+                <button onclick="emit('command:key', {key:'down'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">↓</button>
+                <button onclick="emit('command:key', {key:'right'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">→</button>
+                <button onclick="emit('command:key', {key:'home'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-gray-300">HOME</button>
+                <button onclick="emit('command:key', {key:'end'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-gray-300">END</button>
+                <button onclick="emit('command:key', {key:'delete'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-red-600 p-2 rounded text-red-400 font-bold">DEL</button>
+            </div>
+
+            <!-- Row 3: Quick Action Shortcuts -->
+            <div class="grid grid-cols-5 gap-1">
+                <button onclick="emit('command:key', {key:'selectall'}); navigator.vibrate(10);" class="bg-indigo-900/60 hover:bg-indigo-800 p-2 rounded text-indigo-300 font-bold">SEL ALL</button>
+                <button onclick="emit('command:key', {key:'copy'}); navigator.vibrate(10);" class="bg-emerald-900/60 hover:bg-emerald-800 p-2 rounded text-emerald-300 font-bold">COPY</button>
+                <button onclick="emit('command:key', {key:'paste'}); navigator.vibrate(10);" class="bg-amber-900/60 hover:bg-amber-800 p-2 rounded text-amber-300 font-bold">PASTE</button>
+                <button onclick="emit('command:key', {key:'undo'}); navigator.vibrate(10);" class="bg-purple-900/60 hover:bg-purple-800 p-2 rounded text-purple-300 font-bold">UNDO</button>
+                <button onclick="emit('command:key', {key:'cut'}); navigator.vibrate(10);" class="bg-rose-900/60 hover:bg-rose-800 p-2 rounded text-rose-300 font-bold">CUT</button>
+            </div>
+
+            <!-- Row 4: Code Symbols Bar (Scrollable) -->
+            <div class="flex gap-1 overflow-x-auto py-1 no-scrollbar">
+                <button onclick="emit('command:type', {text:'('});" class="bg-gray-800 min-w-[32px] p-2 rounded text-yellow-300 font-mono font-bold">(</button>
+                <button onclick="emit('command:type', {text:')'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-yellow-300 font-mono font-bold">)</button>
+                <button onclick="emit('command:type', {text:'{'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-yellow-300 font-mono font-bold">{</button>
+                <button onclick="emit('command:type', {text:'}'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-yellow-300 font-mono font-bold">}</button>
+                <button onclick="emit('command:type', {text:'['});" class="bg-gray-800 min-w-[32px] p-2 rounded text-yellow-300 font-mono font-bold">[</button>
+                <button onclick="emit('command:type', {text:']'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-yellow-300 font-mono font-bold">]</button>
+                <button onclick="emit('command:type', {text:'<' });" class="bg-gray-800 min-w-[32px] p-2 rounded text-cyan-300 font-mono font-bold">&lt;</button>
+                <button onclick="emit('command:type', {text:'>'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-cyan-300 font-mono font-bold">&gt;</button>
+                <button onclick="emit('command:type', {text:'='});" class="bg-gray-800 min-w-[32px] p-2 rounded text-cyan-300 font-mono font-bold">=</button>
+                <button onclick="emit('command:type', {text:';'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-green-300 font-mono font-bold">;</button>
+                <button onclick="emit('command:type', {text:':'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-green-300 font-mono font-bold">:</button>
+                <button onclick="emit('command:type', {text:'\"'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-green-300 font-mono font-bold">"</button>
+                <button onclick="emit('command:type', {text:'\''});" class="bg-gray-800 min-w-[32px] p-2 rounded text-green-300 font-mono font-bold">'</button>
+                <button onclick="emit('command:type', {text:'/'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-orange-300 font-mono font-bold">/</button>
+                <button onclick="emit('command:type', {text:'\\'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-orange-300 font-mono font-bold">\</button>
+                <button onclick="emit('command:type', {text:'+'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-rose-300 font-mono font-bold">+</button>
+                <button onclick="emit('command:type', {text:'-'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-rose-300 font-mono font-bold">-</button>
+                <button onclick="emit('command:type', {text:'*'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-rose-300 font-mono font-bold">*</button>
+                <button onclick="emit('command:type', {text:'&'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-purple-300 font-mono font-bold">&amp;</button>
+                <button onclick="emit('command:type', {text:'|'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-purple-300 font-mono font-bold">|</button>
+                <button onclick="emit('command:type', {text:'!'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-red-400 font-mono font-bold">!</button>
+                <button onclick="emit('command:type', {text:'?'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-yellow-400 font-mono font-bold">?</button>
+                <button onclick="emit('command:type', {text:'_'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-gray-300 font-mono font-bold">_</button>
+                <button onclick="emit('command:type', {text:'#'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-gray-300 font-mono font-bold">#</button>
+                <button onclick="emit('command:type', {text:'$'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-emerald-300 font-mono font-bold">$</button>
+                <button onclick="emit('command:type', {text:'@'});" class="bg-gray-800 min-w-[32px] p-2 rounded text-blue-300 font-mono font-bold">@</button>
             </div>
         </div>
 
         <!-- HIDDEN KEYBOARD INPUT -->
         <form id="kb-form" onsubmit="event.preventDefault(); emit('command:key', {key:'enter'});"
             action="javascript:void(0);">
-            <!-- Type="password" prevents auto-correct/predictive text, enabling raw keystrokes -->
-            <input type="password" id="hidden-input" class="opacity-0 absolute top-0" autocomplete="off"
-                autocorrect="off" autocapitalize="off" spellcheck="false" />
+            <input type="text" id="hidden-input" class="opacity-0 absolute top-0 w-1 h-1" autocomplete="off"
+                autocorrect="off" autocapitalize="none" spellcheck="false" />
             <input type="submit" class="hidden" />
         </form>
     </div>
@@ -252,7 +299,7 @@
 
         // --- AUTH ---
         const urlParams = new URLSearchParams(window.location.search);
-        const savedToken = localStorage.getItem('remotelink_token');
+        const savedToken = localStorage.getItem('jarvis_token');
 
         if (urlParams.get('token')) {
             document.getElementById('token-input').value = urlParams.get('token');
@@ -265,10 +312,10 @@
         }
 
         function getDeviceId() {
-            let id = localStorage.getItem('remotelink_device_id');
+            let id = localStorage.getItem('jarvis_device_id');
             if (!id) {
                 id = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-                localStorage.setItem('remotelink_device_id', id);
+                localStorage.setItem('jarvis_device_id', id);
             }
             return id;
         }
@@ -291,7 +338,7 @@
             document.getElementById('deck-screen').classList.remove('hidden');
             document.getElementById('deck-screen').classList.add('flex');
 
-            const deviceId = urlParams.get('deviceId') || urlParams.get('userId') || getDeviceId();
+            const deviceId = getDeviceId();
 
             // Determine if it's a Token or a Password
             let authData = { deviceId };
@@ -302,7 +349,8 @@
                 authData.password = inputVal;
             }
 
-            const relayUrl = urlParams.get('relay') || window.location.origin;
+            const urlParams = new URLSearchParams(window.location.search);
+            const relayUrl = urlParams.get('relay') || 'https://jarvis-relay-hub-production.up.railway.app';
 
             socket = io(relayUrl, {
                 auth: authData, // Send persistent Device ID & Auth
@@ -326,34 +374,16 @@
                 // Show Security Wall until approved
                 document.getElementById('approval-overlay').classList.remove('hidden');
 
-                // Emit identify event so server links this socket as mobile
-                socket.emit('identify', {
-                    type: 'mobile',
-                    deviceId: deviceId,
-                    pairingToken: inputVal
-                });
-
                 startStream();
             });
 
             socket.on('connection:approved', () => {
                 // Connection Validated - Save Token for next time
                 const token = document.getElementById('token-input').value;
-                if (token) localStorage.setItem('remotelink_token', token);
+                if (token) localStorage.setItem('jarvis_token', token);
 
                 // Unlock UI
                 document.getElementById('approval-overlay').classList.add('hidden');
-            });
-
-            // Handle Session Plan selection
-            let countdownInterval = null;
-            socket.on('session-plan', (data) => {
-                // All sessions are premium — no timer needed
-            });
-
-            // Session expiration disabled
-            socket.on('session-expired', () => {
-                // No-op: premium sessions don't expire
             });
 
             socket.on('mic:data', (data) => {
@@ -507,17 +537,28 @@
 
                 btn.style.backgroundColor = '#ef4444';
                 btn.innerText = '🔊';
-                emit('command:audio-start');
+                emit('command:mic-start');
             } else {
                 btn.style.backgroundColor = '#374151';
                 btn.innerText = '🎤';
-                emit('command:audio-stop');
+                emit('command:mic-stop');
                 if (audioCtx) audioCtx.suspend();
             }
         }
 
         function startStream() {
-            // Streaming is automatically pushed by the desktop backend, no polling loop required.
+            if (isStreamOn) return;
+            isStreamOn = true;
+            // 10fps loop - faster updates
+            setInterval(() => {
+                if (socket && document.visibilityState === 'visible') {
+                    if (isCameraMode) {
+                        socket.emit('command:camera');
+                    } else {
+                        socket.emit('command:peek');
+                    }
+                }
+            }, 100);
         }
 
         // --- TOUCH LOGIC (Friendly with Zoom) ---
@@ -594,7 +635,8 @@
         });
 
         function showRipple(x, y) {
-            // Haptic Feedback (Vibrate) for "Tactile" feel disabled for silence
+            // Haptic Feedback (Vibrate) for "Tactile" feel
+            if (navigator.vibrate) navigator.vibrate(15);
 
             const ripple = document.createElement('div');
             ripple.className = 'ripple';
@@ -609,21 +651,15 @@
         const hiddenInput = document.getElementById('hidden-input');
 
         function toggleKeyboard() {
-            hiddenInput.focus();
-            hiddenInput.click();
-
-            // 🧠 SMART WAKE: When opening keyboard, ensure password field is FOCUSED.
-            // 1. Wake Screen (Shift - Silent)
-            // 2. Select Password Field (Tab)
-            setTimeout(() => {
-                // Wake up the lock screen silently
-                emit('command:key', { key: 'shift' }); // Wake
-
-                // Wait for animation to slide up, then hit TAB to focus password box
-                setTimeout(() => {
-                    emit('command:key', { key: 'tab' });
-                }, 300);
-            }, 100);
+            const drawer = document.getElementById('keyboard-drawer');
+            if (drawer) {
+                drawer.classList.toggle('hidden');
+                drawer.classList.toggle('flex');
+            }
+            if (hiddenInput) {
+                hiddenInput.focus();
+                hiddenInput.click();
+            }
         }
 
         hiddenInput.addEventListener('input', (e) => {
@@ -660,83 +696,36 @@
             hiddenInput.blur();
         });
 
-        // --- REALTIME TYPING & AUTO TYPER ---
-        let lastLength = 0;
-        const visibleInput = document.getElementById('clip-input');
+        // --- CLIPBOARD ---
+        function sendClipboard() {
+            const text = document.getElementById('clip-input').value;
+            if (text) {
+                emit('command:clipboard-set', { text: text, paste: true }); // Request auto-paste
+                // Visual feedback
+                const btn = event.target;
+                const oldText = btn.innerText;
+                btn.innerText = '✅ SENT';
+                setTimeout(() => btn.innerText = oldText, 1000);
+            }
+        }
 
-        visibleInput.addEventListener('input', (e) => {
-            const currentVal = visibleInput.value;
-            const currentLen = currentVal.length;
+        function getClipboard() {
+            emit('command:clipboard-get');
+            // Visual feedback
+            const btn = event.target;
+            const oldText = btn.innerText;
+            btn.innerText = '⏳';
+            setTimeout(() => btn.innerText = oldText, 2000);
+        }
 
-            if (currentLen > lastLength) {
-                // Characters added
-                const addedText = currentVal.substring(lastLength);
-                emit('command:type', { text: addedText });
-            } else if (currentLen < lastLength) {
-                // Backspaces
-                const diff = lastLength - currentLen;
-                for (let i = 0; i < diff; i++) {
-                    emit('command:key', { key: 'backspace' });
+        if (socket) {
+            socket.on('clipboard:data', (data) => {
+                if (data.text) {
+                    document.getElementById('clip-input').value = data.text;
+                    // Try to copy to phone clipboard if permissions allow (often fails without user gesture)
+                    try { navigator.clipboard.writeText(data.text); } catch (e) { }
                 }
-            }
-            lastLength = currentLen;
-        });
-
-        visibleInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                emit('command:key', { key: 'enter' });
-            }
-        });
-
-        function clearTypeBox() {
-            visibleInput.value = '';
-            lastLength = 0;
-        }
-
-        // --- AUTO TYPER LOGIC ---
-        let autoTypeInterval = null;
-        let autoTypeIndex = 0;
-        let autoTypeText = '';
-        let typingSpeed = 50; // Default: 50ms (human-like typing speed)
-        const autoInput = document.getElementById('auto-input');
-        const speedLabel = document.getElementById('speed-label');
-
-        function adjustSpeed(direction) {
-            // direction: 1 = SPEED+ (faster, decrease delay), -1 = SPEED- (slower, increase delay)
-            if (direction > 0) {
-                typingSpeed = Math.max(10, typingSpeed - 10); // Minimum 10ms delay
-            } else {
-                typingSpeed = Math.min(200, typingSpeed + 10); // Maximum 200ms delay
-            }
-            speedLabel.innerText = typingSpeed + 'ms';
-
-            // If auto-typer is currently active, apply the new speed immediately!
-            if (autoTypeInterval) {
-                runAutoTypeLoop();
-            }
-        }
-
-        function startAutoType() {
-            autoTypeText = autoInput.value;
-            if (!autoTypeText) return;
-            autoTypeIndex = 0;
-            runAutoTypeLoop();
-        }
-
-        function runAutoTypeLoop() {
-            if (autoTypeInterval) {
-                clearInterval(autoTypeInterval);
-            }
-            autoTypeInterval = setInterval(() => {
-                if (autoTypeIndex < autoTypeText.length) {
-                    const char = autoTypeText[autoTypeIndex];
-                    emit('command:type', { text: char });
-                    autoTypeIndex++;
-                } else {
-                    clearInterval(autoTypeInterval);
-                    autoTypeInterval = null;
-                }
-            }, typingSpeed);
+            });
         }
         // Need to add listener inside connect() as well since socket is null here initially?
         // Actually, the listeners are lost on reconnect unless we move them.
