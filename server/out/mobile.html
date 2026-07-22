@@ -160,17 +160,27 @@
             </div>
         </div>
 
-        <!-- CLIPBOARD TOOLBAR -->
+        <!-- REALTIME TYPING TOOLBAR -->
         <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
-            <span class="text-xs text-gray-500">📋</span>
-            <input id="clip-input" type="text" placeholder="Sync Text..."
+            <span class="text-xs text-gray-500">⚡</span>
+            <input id="clip-input" type="text" placeholder="Type here in Realtime..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button onclick="sendClipboard()"
-                class="p-2 bg-blue-900/50 text-blue-400 border border-blue-900 rounded text-[10px] font-bold active:bg-blue-800">TO
-                PC</button>
-            <button onclick="getClipboard()"
-                class="p-2 bg-green-900/50 text-green-400 border border-green-900 rounded text-[10px] font-bold active:bg-green-800">FROM
-                PC</button>
+            <button onclick="clearTypeBox()"
+                class="p-2 bg-red-900/50 text-red-400 border border-red-900 rounded text-[10px] font-bold active:bg-red-800">CLEAR</button>
+        </div>
+
+        <!-- AUTO TYPER TOOLBAR -->
+        <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
+            <span class="text-xs text-gray-500">🤖</span>
+            <input id="auto-input" type="text" placeholder="Paste text to Auto-Type..."
+                class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <button onclick="startAutoType()"
+                class="p-2 bg-blue-900/50 text-blue-400 border border-blue-900 rounded text-[10px] font-bold active:bg-blue-800">AUTO TYPE</button>
+            <button onclick="adjustSpeed(-1)"
+                class="p-2 bg-gray-800 text-gray-300 rounded text-[10px] font-bold active:bg-gray-700">SPEED -</button>
+            <span id="speed-label" class="text-[10px] text-gray-400 font-mono w-10 text-center">50ms</span>
+            <button onclick="adjustSpeed(1)"
+                class="p-2 bg-gray-800 text-gray-300 rounded text-[10px] font-bold active:bg-gray-700">SPEED +</button>
         </div>
 
         <!-- TOUCH AREA (SCREEN) with Waiting Message -->
@@ -305,7 +315,6 @@
             document.getElementById('token-input').value = urlParams.get('token');
             connect();
         } else if (savedToken) {
-            // Auto-Connect with saved token
             console.log("Found Saved Token, connecting...");
             document.getElementById('token-input').value = savedToken;
             connect();
@@ -333,16 +342,13 @@
 
             document.getElementById('status').innerText = "Connecting...";
 
-            // 🚀 FAST UI SWAP: Hide Login immediately, show Deck (which has its own connecting spinner)
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('deck-screen').classList.remove('hidden');
             document.getElementById('deck-screen').classList.add('flex');
 
             const deviceId = getDeviceId();
 
-            // Determine if it's a Token or a Password
             let authData = { deviceId };
-            // Simple heuristic: Tokens are long (hex), Passwords are short
             if (inputVal.length > 20) {
                 authData.token = inputVal;
             } else {
@@ -353,17 +359,17 @@
             const relayUrl = urlParams.get('relay') || 'https://jarvis-relay-hub-production.up.railway.app';
 
             socket = io(relayUrl, {
-                auth: authData, // Send persistent Device ID & Auth
-                transports: ['websocket', 'polling'], // ✅ Prioritize Websocket
+                auth: authData,
+                transports: ['websocket', 'polling'],
                 extraHeaders: {
                     "ngrok-skip-browser-warning": "true"
                 },
                 reconnection: true,
-                reconnectionAttempts: Infinity, // ♾️ Never stop trying to reconnect
+                reconnectionAttempts: Infinity,
                 reconnectionDelay: 1000,
                 reconnectionDelayMax: 5000,
-                timeout: 10000, // Fail fast to retry
-                forceNew: true // Ensure fresh connection
+                timeout: 10000,
+                forceNew: true
             });
 
             socket.on('connect', () => {
@@ -371,25 +377,21 @@
                 document.getElementById('deck-screen').classList.remove('hidden');
                 document.getElementById('deck-screen').classList.add('flex');
 
-                // 🚀 Send identify to relay hub so desktop pairs immediately
                 socket.emit('identify', {
                     type: 'mobile',
                     pairingToken: inputVal,
                     deviceId: deviceId
                 });
 
-                // Auto-hide security wall once identified
                 document.getElementById('approval-overlay').classList.add('hidden');
 
                 startStream();
             });
 
             socket.on('connection:approved', () => {
-                // Connection Validated - Save Token for next time
                 const token = document.getElementById('token-input').value;
                 if (token) localStorage.setItem('jarvis_token', token);
 
-                // Unlock UI
                 document.getElementById('approval-overlay').classList.add('hidden');
             });
 
@@ -405,7 +407,6 @@
                 if (data.image) {
                     img.style.objectFit = 'contain';
                     img.src = data.image;
-                    // Opacity handled by onload
                     document.getElementById('waiting-msg').style.display = 'none';
                 }
             });
@@ -413,7 +414,7 @@
             socket.on('camera:data', (data) => {
                 const img = document.getElementById('peek-img');
                 if (data.image) {
-                    img.style.objectFit = 'cover'; // Camera fills screen
+                    img.style.objectFit = 'cover';
                     img.src = data.image;
                     img.style.opacity = '1';
                     document.getElementById('waiting-msg').style.display = 'none';
@@ -423,12 +424,9 @@
             socket.on('clipboard:data', (data) => {
                 if (data.text) {
                     document.getElementById('clip-input').value = data.text;
-                    // Try to copy to phone clipboard
                     try { navigator.clipboard.writeText(data.text); } catch (e) { }
                 }
             });
-
-            // ... existing socket listeners ...
 
             socket.on('auth:required', () => {
                 console.log("🔒 Authentication Required: PIN");
@@ -443,17 +441,14 @@
 
             socket.on('connection:approved', () => {
                 console.log("✅ Connection Approved!");
-                document.getElementById('waiting-msg').style.display = 'none'; // Hide Spinner
-                document.getElementById('lock-overlay').classList.add('hidden'); // Hide Screen Lock if visible
-                document.getElementById('pin-overlay').classList.add('hidden'); // Hide PIN Overlay
+                document.getElementById('waiting-msg').style.display = 'none';
+                document.getElementById('lock-overlay').classList.add('hidden');
+                document.getElementById('pin-overlay').classList.add('hidden');
                 document.getElementById('pin-overlay').classList.remove('flex');
                 startStream();
             });
 
-            // ... existing disconnect listener ...
-
             socket.on('disconnect', () => {
-                // optional: alert("Disconnected");
                 document.getElementById('waiting-msg').style.display = 'flex';
                 document.getElementById('waiting-msg').querySelector('span').innerText = "Disconnected";
             });
@@ -471,13 +466,12 @@
             const btn = document.getElementById('cam-btn');
             const label = document.getElementById('cam-label');
             if (isCameraMode) {
-                btn.style.backgroundColor = '#ef4444'; // Red
+                btn.style.backgroundColor = '#ef4444';
                 btn.querySelector('span:first-child').innerText = '🎥';
                 label.innerText = 'CAM';
             } else {
-                // Stop camera signal
                 socket.emit('command:camera-stop');
-                btn.style.backgroundColor = '#374151'; // Gray
+                btn.style.backgroundColor = '#374151';
                 btn.querySelector('span:first-child').innerText = '👁️';
                 label.innerText = 'PEEK';
             }
@@ -491,25 +485,19 @@
             if (!audioCtx) return;
 
             try {
-                // 1. Raw Base64 -> Binary String
                 const binaryString = window.atob(base64Chunk);
                 const len = binaryString.length;
                 const bytes = new Uint8Array(len);
                 for (let i = 0; i < len; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
-                // 2. Int16 Array (PCM)
                 const int16Data = new Int16Array(bytes.buffer);
-
-                // 3. Float32 Array
                 const floatData = new Float32Array(int16Data.length);
                 for (let i = 0; i < int16Data.length; i++) {
-                    // Convert Int16 to Float32 range [-1, 1]
                     const int = int16Data[i];
                     floatData[i] = int < 0 ? int / 0x8000 : int / 0x7FFF;
                 }
 
-                // 4. Create Buffer (Sample Rate must match Sender: 16000)
                 const buffer = audioCtx.createBuffer(1, floatData.length, 16000);
                 buffer.copyToChannel(floatData, 0);
 
@@ -518,8 +506,6 @@
                 source.connect(audioCtx.destination);
 
                 const now = audioCtx.currentTime;
-
-                // Jitter buffer logic
                 if (nextStartTime < now) nextStartTime = now + 0.05;
 
                 source.start(nextStartTime);
@@ -533,7 +519,6 @@
             const btn = document.getElementById('mic-btn');
 
             if (isMicOn) {
-                // UNLOCK AUDIO on Click
                 if (!audioCtx) {
                     const AudioContext = window.AudioContext || window.webkitAudioContext;
                     audioCtx = new AudioContext();
@@ -556,7 +541,6 @@
         function startStream() {
             if (isStreamOn) return;
             isStreamOn = true;
-            // 10fps loop - faster updates
             setInterval(() => {
                 if (socket && document.visibilityState === 'visible') {
                     if (isCameraMode) {
@@ -568,7 +552,7 @@
             }, 100);
         }
 
-        // --- TOUCH LOGIC (Friendly with Zoom) ---
+        // --- TOUCH LOGIC ---
         const touchLayer = document.getElementById('touch-layer');
         let startX = 0, startY = 0;
         let isDrag = false;
@@ -577,17 +561,14 @@
             const img = document.getElementById('peek-img');
             const rect = touchLayer.getBoundingClientRect();
 
-            // Calculate actual image dimensions (contain)
-            const imgRatio = 1280 / 720;
-            // Better: use img.naturalWidth if available
             let natW = img.naturalWidth || 1280;
             let natH = img.naturalHeight || 720;
             if (natW === 0) { natW = 1280; natH = 720; }
 
             const scale = Math.min(rect.width / natW, rect.height / natH) || 1;
 
-            const w = natW * scale; // Rendered Width
-            const h = natH * scale; // Rendered Height
+            const w = natW * scale;
+            const h = natH * scale;
 
             const offsetX = (rect.width - w) / 2;
             const offsetY = (rect.height - h) / 2;
@@ -595,11 +576,9 @@
             const xVal = touch.clientX - rect.left - offsetX;
             const yVal = touch.clientY - rect.top - offsetY;
 
-            // Normalize to 0..1 relative to IMAGE
             let pctX = xVal / w;
             let pctY = yVal / h;
 
-            // Clamp
             pctX = Math.max(0, Math.min(1, pctX));
             pctY = Math.max(0, Math.min(1, pctY));
 
@@ -607,7 +586,6 @@
         }
 
         touchLayer.addEventListener('touchstart', (e) => {
-            // Do NOT preventDefault here, let browser handle Zoom/Pan start
             const touch = e.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
@@ -615,7 +593,6 @@
         }, { passive: true });
 
         touchLayer.addEventListener('touchmove', (e) => {
-            // If moved more than 10px, it's a drag/pan/zoom
             const touch = e.touches[0];
             if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
                 isDrag = true;
@@ -623,18 +600,13 @@
         }, { passive: true });
 
         touchLayer.addEventListener('touchend', (e) => {
-            // If it wasn't a drag (Zoom/Pan), treat as Click
             if (!isDrag && e.changedTouches.length > 0) {
-                // Prevent default click (ghost click) and handle manually
                 e.preventDefault();
 
                 const touch = e.changedTouches[0];
                 const coords = getMappedCoords(touch);
 
-                // 1. Move Mouse to position
                 emit('command:move-mouse', { x: coords.x, y: coords.y, mode: 'pct' });
-
-                // 2. Click
                 emit('command:click', { button: 'left' });
 
                 showRipple(touch.clientX, touch.clientY);
@@ -642,7 +614,6 @@
         });
 
         function showRipple(x, y) {
-            // Haptic Feedback (Vibrate) for "Tactile" feel
             if (navigator.vibrate) navigator.vibrate(15);
 
             const ripple = document.createElement('div');
@@ -686,72 +657,99 @@
             }
         });
 
-        // Mobile "Go" button often triggers form submit
         document.getElementById('kb-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            // DOUBLE ENTER STRATEGY
-            // 1. Send Enter
             emit('command:key', { key: 'enter' });
-
-            // 2. Wait and Send again (to be sure)
             setTimeout(() => {
                 emit('command:key', { key: 'enter' });
             }, 100);
-
-            // 3. Hide Keyboard (optional, but good UX)
             hiddenInput.blur();
         });
 
-        // --- CLIPBOARD ---
-        function sendClipboard() {
-            const text = document.getElementById('clip-input').value;
-            if (text) {
-                emit('command:clipboard-set', { text: text, paste: true }); // Request auto-paste
-                // Visual feedback
-                const btn = event.target;
-                const oldText = btn.innerText;
-                btn.innerText = '✅ SENT';
-                setTimeout(() => btn.innerText = oldText, 1000);
+        // --- REALTIME TYPING & AUTO TYPER ---
+        let lastLength = 0;
+        const visibleInput = document.getElementById('clip-input');
+
+        visibleInput.addEventListener('input', (e) => {
+            const currentVal = visibleInput.value;
+            const currentLen = currentVal.length;
+
+            if (currentLen > lastLength) {
+                const addedText = currentVal.substring(lastLength);
+                emit('command:type', { text: addedText });
+            } else if (currentLen < lastLength) {
+                const diff = lastLength - currentLen;
+                for (let i = 0; i < diff; i++) {
+                    emit('command:key', { key: 'backspace' });
+                }
+            }
+            lastLength = currentLen;
+        });
+
+        visibleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                emit('command:key', { key: 'enter' });
+            }
+        });
+
+        function clearTypeBox() {
+            visibleInput.value = '';
+            lastLength = 0;
+        }
+
+        // --- AUTO TYPER LOGIC ---
+        let autoTypeInterval = null;
+        let autoTypeIndex = 0;
+        let autoTypeText = '';
+        let typingSpeed = 50;
+        const autoInput = document.getElementById('auto-input');
+        const speedLabel = document.getElementById('speed-label');
+
+        function adjustSpeed(direction) {
+            if (direction > 0) {
+                typingSpeed = Math.max(10, typingSpeed - 10);
+            } else {
+                typingSpeed = Math.min(200, typingSpeed + 10);
+            }
+            speedLabel.innerText = typingSpeed + 'ms';
+
+            if (autoTypeInterval) {
+                runAutoTypeLoop();
             }
         }
 
-        function getClipboard() {
-            emit('command:clipboard-get');
-            // Visual feedback
-            const btn = event.target;
-            const oldText = btn.innerText;
-            btn.innerText = '⏳';
-            setTimeout(() => btn.innerText = oldText, 2000);
+        function startAutoType() {
+            autoTypeText = autoInput.value;
+            if (!autoTypeText) return;
+            autoTypeIndex = 0;
+            runAutoTypeLoop();
         }
 
-        if (socket) {
-            socket.on('clipboard:data', (data) => {
-                if (data.text) {
-                    document.getElementById('clip-input').value = data.text;
-                    // Try to copy to phone clipboard if permissions allow (often fails without user gesture)
-                    try { navigator.clipboard.writeText(data.text); } catch (e) { }
+        function runAutoTypeLoop() {
+            if (autoTypeInterval) {
+                clearInterval(autoTypeInterval);
+            }
+            autoTypeInterval = setInterval(() => {
+                if (autoTypeIndex < autoTypeText.length) {
+                    const char = autoTypeText[autoTypeIndex];
+                    emit('command:type', { text: char });
+                    autoTypeIndex++;
+                } else {
+                    clearInterval(autoTypeInterval);
+                    autoTypeInterval = null;
                 }
-            });
+            }, typingSpeed);
         }
-        // Need to add listener inside connect() as well since socket is null here initially?
-        // Actually, the listeners are lost on reconnect unless we move them.
-        // Simplest: Add specific listener inside startStream or connect block.
-        // Let's modify the emit logic or just rely on global socket check.
-        // Better: Hook into existing socket setup.
 
         function sendBlindUnlock() {
             const pass = document.getElementById('unlock-pass').value;
             if (pass) {
-                // Send each char
                 emit('command:type', { text: pass });
             }
-            // Clear input for security
             document.getElementById('unlock-pass').value = '';
 
-            // Hit Enter after short delay
             setTimeout(() => {
                 emit('command:key', { key: 'enter' });
-                // Vibrate
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             }, 300);
         }
