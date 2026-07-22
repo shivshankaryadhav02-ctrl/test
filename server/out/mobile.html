@@ -72,22 +72,23 @@
         }
 
         #trackpad-area {
-            /* Allow default touch actions (Zoom/Pan) */
             touch-action: manipulation;
             position: relative;
-            background: #111;
+            background: #000;
             border: 1px solid #333;
             border-radius: 12px;
             overflow: hidden;
-            /* Keep image inside */
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            max-height: 45vh;
+            margin: 0 auto;
         }
 
         #peek-img {
             width: 100%;
             height: 100%;
-            object-fit: fill;
+            object-fit: contain;
             pointer-events: none;
-            /* Let touches pass to parent */
         }
 
         @keyframes ripple-effect {
@@ -184,7 +185,7 @@
         <!-- TOUCH AREA (SCREEN) with Waiting Message -->
         <div id="trackpad-area" class="flex-1 relative bg-gray-900 border border-gray-700">
             <!-- Video Feed -->
-            <img id="peek-img" src="" class="absolute inset-0 w-full h-full object-cover opacity-50"
+            <img id="peek-img" src="" class="absolute inset-0 w-full h-full object-contain opacity-50"
                 alt="Screen Stream"
                 onerror="this.style.opacity=0; document.getElementById('lock-overlay').classList.remove('hidden');"
                 onload="this.style.opacity=1; document.getElementById('lock-overlay').classList.add('hidden'); if(this.naturalWidth && this.naturalHeight){ document.getElementById('trackpad-area').style.aspectRatio = (this.naturalWidth / this.naturalHeight); }" />
@@ -403,7 +404,7 @@
             socket.on('peek:data', (data) => {
                 const img = document.getElementById('peek-img');
                 if (data.image) {
-                    img.style.objectFit = 'fill';
+                    img.style.objectFit = 'contain';
                     img.src = data.image;
                     document.getElementById('waiting-msg').style.display = 'none';
                 }
@@ -412,7 +413,7 @@
             socket.on('camera:data', (data) => {
                 const img = document.getElementById('peek-img');
                 if (data.image) {
-                    img.style.objectFit = 'fill';
+                    img.style.objectFit = 'contain';
                     img.src = data.image;
                     img.style.opacity = '1';
                     document.getElementById('waiting-msg').style.display = 'none';
