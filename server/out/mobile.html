@@ -169,6 +169,8 @@
                         id="cam-label">PEEK</span></button>
                 <button onclick="toggleMic()" id="mic-btn"
                     class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🎤</span><span>MIC</span></button>
+                <button onclick="toggleMouseMode()" id="mouse-btn"
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🖱️</span><span id="mouse-label">MOUSE</span></button>
             </div>
 
             <!-- Media Controls (Volume Down / Up) -->
@@ -756,6 +758,68 @@
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             }, 300);
         }
+
+        // ---- MOUSE MODE ----
+        let mouseModeActive = false;
+        let lastMouseEmit = 0;
+        const MOUSE_THROTTLE_MS = 16; // ~60fps max
+
+        function toggleMouseMode() {
+            mouseModeActive = !mouseModeActive;
+            const btn = document.getElementById('mouse-btn');
+            const label = document.getElementById('mouse-label');
+            const touchLayer = document.getElementById('touch-layer');
+            if (mouseModeActive) {
+                btn.classList.remove('bg-gray-700');
+                btn.classList.add('bg-green-700');
+                label.textContent = 'ON';
+                touchLayer.style.cursor = 'crosshair';
+            } else {
+                btn.classList.remove('bg-green-700');
+                btn.classList.add('bg-gray-700');
+                label.textContent = 'MOUSE';
+                touchLayer.style.cursor = '';
+            }
+        }
+
+        // Mouse move → move remote cursor
+        document.getElementById('touch-layer').addEventListener('mousemove', (e) => {
+            if (!mouseModeActive) return;
+            const now = Date.now();
+            if (now - lastMouseEmit < MOUSE_THROTTLE_MS) return;
+            lastMouseEmit = now;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+            emit('command:move-mouse', { x, y });
+        });
+
+        // Mouse left-click → remote left click
+        document.getElementById('touch-layer').addEventListener('click', (e) => {
+            if (!mouseModeActive) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+            emit('command:click', { x, y, button: 'left' });
+        });
+
+        // Mouse right-click → remote right click
+        document.getElementById('touch-layer').addEventListener('contextmenu', (e) => {
+            if (!mouseModeActive) return;
+            e.preventDefault();
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+            emit('command:click', { x, y, button: 'right' });
+        });
+
+        // Scroll wheel → remote scroll
+        document.getElementById('touch-layer').addEventListener('wheel', (e) => {
+            if (!mouseModeActive) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -3 : 3;
+            emit('command:scroll', { delta });
+        }, { passive: false });
 
     </script>
 
