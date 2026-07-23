@@ -79,15 +79,17 @@
             border-radius: 12px;
             overflow: hidden;
             width: 100%;
+            /* Mobile: fixed aspect ratio */
             aspect-ratio: 16 / 9;
             max-height: 45vh;
             margin: 0 auto;
+            flex-shrink: 0;
         }
 
         #peek-img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: fill;
             pointer-events: none;
         }
 
@@ -105,10 +107,8 @@
 
         .ripple {
             position: fixed;
-            /* Fixed to ensure it stays exactly where finger is */
             border-radius: 50%;
             background: rgba(59, 130, 246, 0.7);
-            /* Electric Blue */
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
             width: 30px;
             height: 30px;
@@ -117,11 +117,24 @@
             z-index: 9999;
         }
 
-        /* Laptop/Desktop responsive size adjustment */
+        /* Laptop/Desktop: fill all remaining vertical space */
         @media (min-width: 768px) {
+            body {
+                overflow: hidden;
+            }
+            #deck-screen {
+                height: 100vh;
+                overflow: hidden;
+            }
             #trackpad-area {
-                max-width: 1000px;
-                max-height: 70vh;
+                aspect-ratio: unset !important;
+                max-height: unset !important;
+                flex: 1 1 0;
+                min-height: 0;
+                border-radius: 8px;
+            }
+            #peek-img {
+                object-fit: fill;
             }
         }
     </style>
