@@ -159,11 +159,15 @@
 
         <!-- TOOLBAR -->
         <div class="flex justify-between items-center bg-gray-900 p-2 rounded-lg gap-2">
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap">
                 <button onclick="emit('command:lock')"
                     class="p-2 bg-red-900/50 rounded text-red-500 text-xs font-bold w-12">LOCK</button>
                 <button onclick="toggleKeyboard()"
                     class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>⌨️</span><span>KEYS</span></button>
+                <button onclick="toggleRealtimePanel()" id="rt-btn"
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>⚡</span><span>LIVE</span></button>
+                <button onclick="toggleAutoPanel()" id="auto-btn"
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🤖</span><span>AUTO</span></button>
                 <button onclick="toggleCamera()" id="cam-btn"
                     class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>👁️</span><span
                         id="cam-label">PEEK</span></button>
@@ -182,8 +186,8 @@
             </div>
         </div>
 
-        <!-- REALTIME TYPING TOOLBAR -->
-        <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
+        <!-- REALTIME TYPING PANEL (collapsed by default) -->
+        <div id="realtime-panel" class="hidden items-center bg-gray-900 p-2 rounded-lg gap-2">
             <span class="text-xs text-gray-500">⚡</span>
             <input id="clip-input" type="text" placeholder="Type here in Realtime..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
@@ -191,8 +195,8 @@
                 class="p-2 bg-red-900/50 text-red-400 border border-red-900 rounded text-[10px] font-bold active:bg-red-800">CLEAR</button>
         </div>
 
-        <!-- AUTO TYPER TOOLBAR -->
-        <div class="flex items-center bg-gray-900 p-2 rounded-lg gap-2">
+        <!-- AUTO TYPER PANEL (collapsed by default) -->
+        <div id="auto-panel" class="hidden items-center bg-gray-900 p-2 rounded-lg gap-2">
             <span class="text-xs text-gray-500">🤖</span>
             <input id="auto-input" type="text" placeholder="Paste text to Auto-Type..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
@@ -643,6 +647,28 @@
                 hiddenInput.focus();
                 hiddenInput.click();
             }
+        }
+
+        function toggleRealtimePanel() {
+            const panel = document.getElementById('realtime-panel');
+            const btn = document.getElementById('rt-btn');
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden');
+            panel.classList.toggle('flex');
+            btn.classList.toggle('bg-gray-700', !isHidden);
+            btn.classList.toggle('bg-green-700', isHidden);
+            if (isHidden) document.getElementById('clip-input').focus();
+        }
+
+        function toggleAutoPanel() {
+            const panel = document.getElementById('auto-panel');
+            const btn = document.getElementById('auto-btn');
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden');
+            panel.classList.toggle('flex');
+            btn.classList.toggle('bg-gray-700', !isHidden);
+            btn.classList.toggle('bg-green-700', isHidden);
+            if (isHidden) document.getElementById('auto-input').focus();
         }
 
         hiddenInput.addEventListener('input', (e) => {
