@@ -454,6 +454,12 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'out', 'index.html'));
 });
 
+// Explicit /mobile route — serves the remote control page with token auto-connect
+app.get('/mobile', (req, res) => {
+  res.sendFile(path.join(__dirname, 'out', 'mobile.html'));
+});
+
+
 // Serve other Next.js static pages directly
 app.get('/:page', (req, res, next) => {
   const pageName = req.params.page;
