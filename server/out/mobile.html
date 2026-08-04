@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -163,18 +163,18 @@
                 <button onclick="emit('command:lock')"
                     class="p-2 bg-red-900/50 rounded text-red-500 text-xs font-bold w-12">LOCK</button>
                 <button onclick="toggleKeyboard()"
-                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>Γî¿∩╕Å</span><span>KEYS</span></button>
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>⌨️</span><span>KEYS</span></button>
                 <button onclick="toggleRealtimePanel()" id="rt-btn"
-                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>ΓÜí</span><span>LIVE</span></button>
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>⚡</span><span>LIVE</span></button>
                 <button onclick="toggleAutoPanel()" id="auto-btn"
-                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>≡ƒñû</span><span>AUTO</span></button>
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🤖</span><span>AUTO</span></button>
                 <button onclick="toggleCamera()" id="cam-btn"
-                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>≡ƒæü∩╕Å</span><span
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>👁️</span><span
                         id="cam-label">PEEK</span></button>
                 <button onclick="toggleMic()" id="mic-btn"
-                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>≡ƒÄñ</span><span>MIC</span></button>
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🎤</span><span>MIC</span></button>
                 <button onclick="toggleMouseMode()" id="mouse-btn"
-                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>≡ƒû▒∩╕Å</span><span id="mouse-label">MOUSE</span></button>
+                    class="p-2 bg-gray-700 rounded text-white text-[10px] w-12 flex flex-col items-center"><span>🖱️</span><span id="mouse-label">MOUSE</span></button>
             </div>
 
             <!-- Media Controls (Volume Down / Up) -->
@@ -188,7 +188,7 @@
 
         <!-- REALTIME TYPING PANEL (collapsed by default) -->
         <div id="realtime-panel" class="hidden items-center bg-gray-900 p-2 rounded-lg gap-2">
-            <span class="text-xs text-gray-500">ΓÜí</span>
+            <span class="text-xs text-gray-500">⚡</span>
             <input id="clip-input" type="text" placeholder="Type here in Realtime..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
             <button onclick="clearTypeBox()"
@@ -197,7 +197,7 @@
 
         <!-- AUTO TYPER PANEL (collapsed by default) -->
         <div id="auto-panel" class="hidden items-center bg-gray-900 p-2 rounded-lg gap-2">
-            <span class="text-xs text-gray-500">≡ƒñû</span>
+            <span class="text-xs text-gray-500">🤖</span>
             <input id="auto-input" type="text" placeholder="Paste text to Auto-Type..."
                 class="bg-gray-800 text-white text-xs p-2 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
             <button onclick="startAutoType()"
@@ -215,7 +215,7 @@
             <img id="peek-img" class="absolute inset-0 w-full h-full object-fill opacity-50"
                 alt="Screen Stream"
                 onerror="this.style.opacity=0;"
-                onload="this.style.opacity=1;" />
+                onload="this.style.opacity=1; if(window.innerWidth < 768 && this.naturalWidth && this.naturalHeight){ document.getElementById('trackpad-area').style.aspectRatio = (this.naturalWidth / this.naturalHeight); }" />
 
             <div id="touch-layer" class="absolute inset-0 w-full h-full z-20"></div>
 
@@ -245,16 +245,16 @@
                 <button onclick="emit('command:key', {key:'tab'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-blue-400 font-bold">TAB</button>
                 <button onclick="emit('command:key', {key:'space'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-gray-200 font-bold">SPACE</button>
                 <button onclick="emit('command:key', {key:'capslock'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-yellow-400 font-bold">CAPS</button>
-                <button onclick="emit('command:key', {key:'backspace'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-red-600 p-2 rounded text-red-300 font-bold">Γî½ BACK</button>
-                <button onclick="emit('command:key', {key:'enter'}); navigator.vibrate(10);" class="bg-blue-700 hover:bg-blue-600 active:bg-blue-500 p-2 rounded text-white font-bold">Γå╡ ENTER</button>
+                <button onclick="emit('command:key', {key:'backspace'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-red-600 p-2 rounded text-red-300 font-bold">⌫ BACK</button>
+                <button onclick="emit('command:key', {key:'enter'}); navigator.vibrate(10);" class="bg-blue-700 hover:bg-blue-600 active:bg-blue-500 p-2 rounded text-white font-bold">↵ ENTER</button>
             </div>
 
             <!-- Row 2: Arrow Navigation & Editing -->
             <div class="grid grid-cols-7 gap-1 text-center">
-                <button onclick="emit('command:key', {key:'left'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">ΓåÉ</button>
-                <button onclick="emit('command:key', {key:'up'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">Γåæ</button>
-                <button onclick="emit('command:key', {key:'down'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">Γåô</button>
-                <button onclick="emit('command:key', {key:'right'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">ΓåÆ</button>
+                <button onclick="emit('command:key', {key:'left'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">←</button>
+                <button onclick="emit('command:key', {key:'up'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">↑</button>
+                <button onclick="emit('command:key', {key:'down'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">↓</button>
+                <button onclick="emit('command:key', {key:'right'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-white font-bold">→</button>
                 <button onclick="emit('command:key', {key:'home'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-gray-300">HOME</button>
                 <button onclick="emit('command:key', {key:'end'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-blue-600 p-2 rounded text-gray-300">END</button>
                 <button onclick="emit('command:key', {key:'delete'}); navigator.vibrate(10);" class="bg-gray-800 hover:bg-gray-700 active:bg-red-600 p-2 rounded text-red-400 font-bold">DEL</button>
@@ -431,7 +431,7 @@
             });
 
             socket.on('auth:required', () => {
-                console.log("≡ƒöÆ Authentication Required: PIN");
+                console.log("🔒 Authentication Required: PIN");
                 document.getElementById('pin-overlay').classList.remove('hidden');
                 document.getElementById('pin-overlay').classList.add('flex');
             });
@@ -442,9 +442,8 @@
             });
 
             socket.on('connection:approved', () => {
-                console.log("Γ£à Connection Approved!");
+                console.log("✅ Connection Approved!");
                 document.getElementById('waiting-msg').style.display = 'none';
-
                 document.getElementById('pin-overlay').classList.add('hidden');
                 document.getElementById('pin-overlay').classList.remove('flex');
                 startStream();
@@ -469,12 +468,12 @@
             const label = document.getElementById('cam-label');
             if (isCameraMode) {
                 btn.style.backgroundColor = '#ef4444';
-                btn.querySelector('span:first-child').innerText = '≡ƒÄÑ';
+                btn.querySelector('span:first-child').innerText = '🎥';
                 label.innerText = 'CAM';
             } else {
                 socket.emit('command:camera-stop');
                 btn.style.backgroundColor = '#374151';
-                btn.querySelector('span:first-child').innerText = '≡ƒæü∩╕Å';
+                btn.querySelector('span:first-child').innerText = '👁️';
                 label.innerText = 'PEEK';
             }
         }
@@ -530,11 +529,11 @@
                 }
 
                 btn.style.backgroundColor = '#ef4444';
-                btn.innerText = '≡ƒöè';
+                btn.innerText = '🔊';
                 emit('command:mic-start');
             } else {
                 btn.style.backgroundColor = '#374151';
-                btn.innerText = '≡ƒÄñ';
+                btn.innerText = '🎤';
                 emit('command:mic-stop');
                 if (audioCtx) audioCtx.suspend();
             }
@@ -784,7 +783,7 @@
             }
         }
 
-        // Mouse move ΓåÆ move remote cursor
+        // Mouse move → move remote cursor
         document.getElementById('touch-layer').addEventListener('mousemove', (e) => {
             if (!mouseModeActive) return;
             const now = Date.now();
@@ -796,7 +795,7 @@
             emit('command:move-mouse', { x, y });
         });
 
-        // Mouse left-click ΓåÆ remote left click
+        // Mouse left-click → remote left click
         document.getElementById('touch-layer').addEventListener('click', (e) => {
             if (!mouseModeActive) return;
             const rect = e.currentTarget.getBoundingClientRect();
@@ -805,7 +804,7 @@
             emit('command:click', { x, y, button: 'left' });
         });
 
-        // Mouse right-click ΓåÆ remote right click
+        // Mouse right-click → remote right click
         document.getElementById('touch-layer').addEventListener('contextmenu', (e) => {
             if (!mouseModeActive) return;
             e.preventDefault();
@@ -815,7 +814,7 @@
             emit('command:click', { x, y, button: 'right' });
         });
 
-        // Scroll wheel ΓåÆ remote scroll
+        // Scroll wheel → remote scroll
         document.getElementById('touch-layer').addEventListener('wheel', (e) => {
             if (!mouseModeActive) return;
             e.preventDefault();
@@ -824,11 +823,6 @@
         }, { passive: false });
 
     </script>
-
-
-    </div>
 </body>
 
 </html>
-
-
