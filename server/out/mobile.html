@@ -212,7 +212,7 @@
         <!-- TOUCH AREA (SCREEN) with Waiting Message -->
         <div id="trackpad-area" class="flex-1 relative bg-gray-900 border border-gray-700">
             <!-- Video Feed -->
-            <img id="peek-img" class="absolute inset-0 w-full h-full object-fill opacity-50"
+            <img id="peek-img" class="absolute inset-0 w-full h-full object-contain" style="opacity:0;"
                 alt="Screen Stream"
                 onerror="this.style.opacity=0;"
                 onload="this.style.opacity=1; if(window.innerWidth < 768 && this.naturalWidth && this.naturalHeight){ document.getElementById('trackpad-area').style.aspectRatio = (this.naturalWidth / this.naturalHeight); }" />
