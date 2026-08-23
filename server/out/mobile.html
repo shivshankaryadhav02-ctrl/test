@@ -251,12 +251,13 @@
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-gray-400">SPEED:</span>
                     <select id="rt-speed-select" onchange="updateRtSpeed()" class="bg-gray-800 text-white text-xs p-1 rounded border border-gray-600 focus:outline-none">
-                        <option value="10">10ms</option>
-                        <option value="25">25ms</option>
-                        <option value="50" selected>50ms</option>
-                        <option value="100">100ms</option>
-                        <option value="250">250ms</option>
-                        <option value="500">500ms</option>
+                        <option value="250">250ms/line</option>
+                        <option value="500" selected>500ms/line</option>
+                        <option value="750">750ms/line</option>
+                        <option value="1000">1s/line</option>
+                        <option value="1500">1.5s/line</option>
+                        <option value="2000">2s/line</option>
+                        <option value="3000">3s/line</option>
                     </select>
                     <div class="flex gap-2 flex-1 justify-end">
                         <button onclick="readClipboardToRealtime()"
@@ -885,15 +886,18 @@
         // PASTE MODE — NORMAL & REALTIME
         // ═══════════════════════════════════════════════
 
-        let currentPasteMode = 'normal'; // 'normal' | 'realtime'
+        let currentPasteMode = 'normal';
 
-        // Realtime paste state — mirrors AUTO TYPE pattern exactly
+        // Realtime paste state
         let rtClipboardText = '';
         let rtCurrentIndex  = 0;
-        let rtIsActive      = false;   // true = in progress (including paused)
-        let rtIsPaused      = false;   // true = paused mid-run
-        let rtSpeed         = 50;      // ms per character
-        let rtIntervalId    = null;    // single active setInterval reference
+        let rtLines         = [];
+        let rtLineIndex     = 0;
+        let rtIsActive      = false;
+        let rtIsPaused      = false;
+        let rtSpeed         = 500;
+        let rtTimeoutId     = null;
+
 
         // ── Toggle PASTE panel open/closed ──────────────────
         function togglePastePanel() {
@@ -992,14 +996,9 @@
             }
         }
 
-        // ── REALTIME: update speed from dropdown ─────────────
+        // ── REALTIME: update speed ────────────────────────────
         function updateRtSpeed() {
             rtSpeed = parseInt(document.getElementById('rt-speed-select').value, 10);
-            // If running: restart interval with new speed
-            if (rtIsActive && !rtIsPaused && rtIntervalId) {
-                clearInterval(rtIntervalId);
-                rtIntervalId = setInterval(rtTick, rtSpeed);
-            }
         }
 
         // ── REALTIME: START / STOP button handler ────────────
@@ -1014,33 +1013,31 @@
         function startOrResumeRealtimePaste() {
             if (!socket || !socket.connected) { alert('Not connected to PC.'); return; }
 
-            // Fresh start only when not already active (paused counts as active)
             if (!rtIsActive) {
                 const text = document.getElementById('paste-realtime-input').value;
                 if (!text) { alert('Nothing to type. Paste text into the box first.'); return; }
                 rtClipboardText = text;
                 rtCurrentIndex  = 0;
+                // Split into lines — clipboard-paste each line (100% char-accurate)
+                rtLines      = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+                rtLineIndex  = 0;
             }
 
             rtIsActive = true;
             rtIsPaused = false;
 
-            // UI → STOP button
             const btn = document.getElementById('rt-start-stop-btn');
             btn.textContent = 'STOP';
             btn.classList.remove('bg-green-700');
             btn.classList.add('bg-red-700');
 
-            // Use setInterval exactly like AUTO TYPE — proven to work
-            rtSpeed = parseInt(document.getElementById('rt-speed-select').value, 10);
-            if (rtIntervalId) { clearInterval(rtIntervalId); }
-            rtIntervalId = setInterval(rtTick, rtSpeed);
+            rtDoNextLine();
         }
 
         function pauseRealtimePaste() {
             if (!rtIsActive) return;
             rtIsPaused = true;
-            if (rtIntervalId) { clearInterval(rtIntervalId); rtIntervalId = null; }
+            if (rtTimeoutId) { clearTimeout(rtTimeoutId); rtTimeoutId = null; }
             const btn = document.getElementById('rt-start-stop-btn');
             if (btn) {
                 btn.textContent = 'START';
@@ -1049,19 +1046,16 @@
             }
         }
 
-        // ── REALTIME: one tick = one character (identical to AUTO TYPE) ──
-        function rtTick() {
-            // Skip \r (Windows line endings)
-            while (rtCurrentIndex < rtClipboardText.length && rtClipboardText[rtCurrentIndex] === '\r') {
-                rtCurrentIndex++;
-            }
+        // ── REALTIME: process one line via clipboard paste ────
+        // Same mechanism as NORMAL paste — reliable for ALL characters
+        function rtDoNextLine() {
+            if (rtIsPaused || !rtIsActive) return;
 
-            // Done?
-            if (rtCurrentIndex >= rtClipboardText.length) {
-                clearInterval(rtIntervalId);
-                rtIntervalId = null;
-                rtIsActive   = false;
-                rtIsPaused   = false;
+            if (rtLineIndex >= rtLines.length) {
+                // All lines done
+                rtIsActive = false;
+                rtIsPaused = false;
+                rtTimeoutId = null;
                 const btn = document.getElementById('rt-start-stop-btn');
                 if (btn) {
                     btn.textContent = 'START';
@@ -1072,21 +1066,34 @@
                 return;
             }
 
-            const char = rtClipboardText[rtCurrentIndex];
-            rtCurrentIndex++;
+            const line = rtLines[rtLineIndex];
+            const isLast = (rtLineIndex === rtLines.length - 1);
+            rtLineIndex++;
 
-            // Exactly like AUTO TYPE for all chars except \n and \t
-            if (char === '\n') {
-                emit('command:key', { key: 'enter' });
-            } else if (char === '\t') {
-                emit('command:key', { key: 'tab' });
-            } else {
-                // ALL other chars (letters, digits, symbols, spaces, unicode)
-                // go through command:type — same as AUTO TYPE
-                emit('command:type', { text: char });
-            }
-
+            // Advance progress (line.length + 1 for the \n, except last line)
+            rtCurrentIndex = Math.min(rtCurrentIndex + line.length + (isLast ? 0 : 1), rtClipboardText.length);
             updateRtProgress();
+
+            if (line.length === 0) {
+                // Empty line: just press Enter (no clipboard needed)
+                if (!isLast) emit('command:key', { key: 'enter' });
+                rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
+            } else {
+                // Paste line via clipboard — same as NORMAL paste, works perfectly
+                emit('command:clipboard-set', { text: line, paste: true });
+
+                // Wait 350ms for relay + clipboard + Ctrl+V to complete, then send Enter
+                rtTimeoutId = setTimeout(() => {
+                    if (rtIsPaused) return;
+                    if (!isLast) emit('command:key', { key: 'enter' });
+                    // Then wait user-controlled delay before next line
+                    rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
+                }, 350);
+            }
+        }
+
+        function rtGetDelay() {
+            return parseInt(document.getElementById('rt-speed-select').value, 10);
         }
 
         // ── Update progress bar & label ──────────────────────
@@ -1099,6 +1106,7 @@
             if (bar)   bar.style.width = pct + '%';
             if (label) label.textContent = done + ' / ' + total;
         }
+
 
         // ── Patch existing toggles to pause RT paste ─────────
         // Wrap the existing toggleRealtimePanel:
