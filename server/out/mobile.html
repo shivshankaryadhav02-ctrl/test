@@ -893,6 +893,8 @@
         let rtIsActive      = false;
         let rtIsPaused      = false;
         let rtIntervalId    = null;
+        let rtSkipLeading   = false; // skip leading whitespace after newline (let IDE auto-indent)
+
 
         // ── Toggle PASTE panel open/closed ──────────────────
         function togglePastePanel() {
@@ -1013,6 +1015,7 @@
                 if (!text) { alert('Nothing to type.'); return; }
                 rtClipboardText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
                 rtCurrentIndex  = 0;
+                rtSkipLeading   = false;
             }
             rtIsActive = true;
             rtIsPaused = false;
@@ -1045,8 +1048,21 @@
                 updateRtProgress();
                 return;
             }
-            const ch = rtClipboardText[rtCurrentIndex++];
-            if      (ch === '\n') emit('command:key',  { key: 'enter' });
+
+            const ch = rtClipboardText[rtCurrentIndex];
+
+            // After each newline: skip original leading whitespace.
+            // The editor's auto-indent positions the cursor — we just type the content.
+            // This prevents the cascading drift-right caused by double-indentation.
+            if (rtSkipLeading && (ch === ' ' || ch === '\t')) {
+                rtCurrentIndex++;
+                updateRtProgress();
+                return;
+            }
+            rtSkipLeading = false;
+
+            rtCurrentIndex++;
+            if      (ch === '\n') { emit('command:key',  { key: 'enter' }); rtSkipLeading = true; }
             else if (ch === '\t') emit('command:key',  { key: 'tab'   });
             else                  emit('command:type', { text: ch      });
             updateRtProgress();
