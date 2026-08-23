@@ -890,9 +890,11 @@
         // State for realtime paste
         let rtClipboardText  = '';
         let rtCurrentIndex   = 0;
+        let rtChunks         = [];      // pre-built array of {type,value} chunks
+        let rtChunkIndex     = 0;       // which chunk we are on
         let rtIsActive       = false;   // true = loop is running
         let rtIsPaused       = false;   // true = paused mid-run
-        let rtSpeed          = 50;      // ms between each key event
+        let rtSpeed          = 50;      // ms between each chunk
         let rtTimeoutId      = null;    // single active timeout reference
 
         // ── Toggle PASTE panel open/closed ──────────────────
@@ -964,13 +966,16 @@
             }
         }
 
-        // ── NORMAL: send full clipboard text to PC as Ctrl+V ─
+        // ── NORMAL: send full text to PC clipboard then Ctrl+V ─
+        // Uses 2-step: set clipboard first, then send paste key after 300ms
         function doNormalPaste() {
             const text = document.getElementById('paste-normal-input').value;
             if (!text) { alert('Nothing to paste. Type or paste text into the box first.'); return; }
             if (!socket || !socket.connected) { alert('Not connected to PC.'); return; }
-            // Set clipboard on PC then trigger Ctrl+V
-            emit('command:clipboard-set', { text: text, paste: true });
+            // Step 1: Set clipboard on PC
+            emit('command:clipboard-set', { text: text, paste: false });
+            // Step 2: After 300ms (clipboard write settles), send Ctrl+V
+            setTimeout(() => { emit('command:key', { key: 'paste' }); }, 300);
             // Visual feedback
             const btn = document.querySelector('#paste-normal-panel button');
             const orig = btn.innerHTML;
@@ -992,16 +997,13 @@
         // ── REALTIME: update speed from dropdown ─────────────
         function updateRtSpeed() {
             rtSpeed = parseInt(document.getElementById('rt-speed-select').value, 10);
-            // If running, the change takes effect on the next timeout naturally
         }
 
         // ── REALTIME: START / STOP button handler ────────────
         function rtStartStop() {
             if (rtIsActive && !rtIsPaused) {
-                // Currently running → STOP (pause)
                 pauseRealtimePaste();
             } else {
-                // Paused or not started → START
                 startOrResumeRealtimePaste();
             }
         }
@@ -1009,14 +1011,16 @@
         function startOrResumeRealtimePaste() {
             if (!socket || !socket.connected) { alert('Not connected to PC.'); return; }
 
-            const textarea = document.getElementById('paste-realtime-input');
-
-            // Fresh start: new text, reset index
+            // Fresh start: build chunk array from text
             if (!rtIsActive) {
-                const text = textarea.value; // Raw value — no modification
+                const text = document.getElementById('paste-realtime-input').value;
                 if (!text) { alert('Nothing to type. Paste text into the box first.'); return; }
                 rtClipboardText = text;
                 rtCurrentIndex  = 0;
+                // Pre-split text into chunks: split on \n and \t boundaries
+                // Each chunk is either a text segment or a special key marker
+                rtChunks = buildChunks(text);
+                rtChunkIndex = 0;
             }
 
             rtIsActive = true;
@@ -1028,15 +1032,38 @@
             btn.classList.remove('bg-green-700');
             btn.classList.add('bg-red-700');
 
-            rtTypeLoop();
+            rtChunkLoop();
+        }
+
+        // Build array of {type:'text'|'enter'|'tab', value:string} chunks
+        // Splits text only at \n and \t boundaries — never at spaces/symbols
+        // This means we send whole words+symbols as one TypeText call (reliable)
+        function buildChunks(text) {
+            const chunks = [];
+            let buf = '';
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (ch === '\r') {
+                    // Skip \r (Windows CRLF — \n follows)
+                    continue;
+                } else if (ch === '\n') {
+                    if (buf.length > 0) { chunks.push({ type: 'text', value: buf }); buf = ''; }
+                    chunks.push({ type: 'enter' });
+                } else if (ch === '\t') {
+                    if (buf.length > 0) { chunks.push({ type: 'text', value: buf }); buf = ''; }
+                    chunks.push({ type: 'tab' });
+                } else {
+                    buf += ch;
+                }
+            }
+            if (buf.length > 0) chunks.push({ type: 'text', value: buf });
+            return chunks;
         }
 
         function pauseRealtimePaste() {
             if (!rtIsActive) return;
             rtIsPaused = true;
-            // Cancel pending timeout — prevents double-loop on resume
             if (rtTimeoutId) { clearTimeout(rtTimeoutId); rtTimeoutId = null; }
-            // UI → show START button
             const btn = document.getElementById('rt-start-stop-btn');
             if (btn) {
                 btn.textContent = 'START';
@@ -1045,15 +1072,18 @@
             }
         }
 
-        // ── REALTIME: core typing loop ───────────────────────
-        function rtTypeLoop() {
+        // ── REALTIME: chunk-based typing loop ────────────────
+        // Sends one chunk per tick (a chunk = a full line segment or a key event)
+        // Speed = delay BETWEEN chunks — prevents PS pipe overload & garbling
+        function rtChunkLoop() {
             if (rtIsPaused || !rtIsActive) return;
 
             // Completion check
-            if (rtCurrentIndex >= rtClipboardText.length) {
-                rtIsActive  = false;
-                rtIsPaused  = false;
-                rtTimeoutId = null;
+            if (rtChunkIndex >= rtChunks.length) {
+                rtIsActive   = false;
+                rtIsPaused   = false;
+                rtTimeoutId  = null;
+                rtCurrentIndex = rtClipboardText.length;
                 const btn = document.getElementById('rt-start-stop-btn');
                 if (btn) {
                     btn.textContent = 'START';
@@ -1064,35 +1094,34 @@
                 return;
             }
 
-            // Get current character
-            const char = rtClipboardText[rtCurrentIndex];
+            const chunk = rtChunks[rtChunkIndex];
+            rtChunkIndex++;
 
-            // ── Character → Key Event Translation ──────────────
-            if (char === '\r') {
-                // Windows-style \r\n — skip \r, \n will send enter
-            } else if (char === '\n') {
+            // Send chunk to PC
+            if (chunk.type === 'text') {
+                // Send entire text segment as one TypeText call — no garbling
+                emit('command:type', { text: chunk.value });
+                // Advance character index by text length
+                rtCurrentIndex += chunk.value.length;
+            } else if (chunk.type === 'enter') {
                 emit('command:key', { key: 'enter' });
-            } else if (char === '\t') {
+                rtCurrentIndex += 1; // \n
+            } else if (chunk.type === 'tab') {
                 emit('command:key', { key: 'tab' });
-            } else if (char === ' ') {
-                emit('command:key', { key: 'space' });
-            } else {
-                // Normal character (preserves unicode, symbols, etc.)
-                emit('command:type', { text: char });
+                rtCurrentIndex += 1; // \t
             }
 
-            rtCurrentIndex++;
             updateRtProgress();
 
-            // Schedule next character using current speed (allows mid-run speed change)
+            // Delay between chunks (read live so speed changes mid-run)
             const delay = parseInt(document.getElementById('rt-speed-select').value, 10);
-            rtTimeoutId = setTimeout(rtTypeLoop, delay);
+            rtTimeoutId = setTimeout(rtChunkLoop, delay);
         }
 
         // ── Update progress bar & label ──────────────────────
         function updateRtProgress() {
             const total = rtClipboardText.length;
-            const done  = rtCurrentIndex;
+            const done  = Math.min(rtCurrentIndex, total);
             const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
             const bar   = document.getElementById('rt-progress-bar');
             const label = document.getElementById('rt-progress-label');
