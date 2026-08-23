@@ -887,15 +887,13 @@
 
         let currentPasteMode = 'normal'; // 'normal' | 'realtime'
 
-        // State for realtime paste
-        let rtClipboardText  = '';
-        let rtCurrentIndex   = 0;
-        let rtChunks         = [];      // pre-built array of {type,value} chunks
-        let rtChunkIndex     = 0;       // which chunk we are on
-        let rtIsActive       = false;   // true = loop is running
-        let rtIsPaused       = false;   // true = paused mid-run
-        let rtSpeed          = 50;      // ms between each chunk
-        let rtTimeoutId      = null;    // single active timeout reference
+        // Realtime paste state — mirrors AUTO TYPE pattern exactly
+        let rtClipboardText = '';
+        let rtCurrentIndex  = 0;
+        let rtIsActive      = false;   // true = in progress (including paused)
+        let rtIsPaused      = false;   // true = paused mid-run
+        let rtSpeed         = 50;      // ms per character
+        let rtIntervalId    = null;    // single active setInterval reference
 
         // ── Toggle PASTE panel open/closed ──────────────────
         function togglePastePanel() {
@@ -997,6 +995,11 @@
         // ── REALTIME: update speed from dropdown ─────────────
         function updateRtSpeed() {
             rtSpeed = parseInt(document.getElementById('rt-speed-select').value, 10);
+            // If running: restart interval with new speed
+            if (rtIsActive && !rtIsPaused && rtIntervalId) {
+                clearInterval(rtIntervalId);
+                rtIntervalId = setInterval(rtTick, rtSpeed);
+            }
         }
 
         // ── REALTIME: START / STOP button handler ────────────
@@ -1011,59 +1014,33 @@
         function startOrResumeRealtimePaste() {
             if (!socket || !socket.connected) { alert('Not connected to PC.'); return; }
 
-            // Fresh start: build chunk array from text
+            // Fresh start only when not already active (paused counts as active)
             if (!rtIsActive) {
                 const text = document.getElementById('paste-realtime-input').value;
                 if (!text) { alert('Nothing to type. Paste text into the box first.'); return; }
                 rtClipboardText = text;
                 rtCurrentIndex  = 0;
-                // Pre-split text into chunks: split on \n and \t boundaries
-                // Each chunk is either a text segment or a special key marker
-                rtChunks = buildChunks(text);
-                rtChunkIndex = 0;
             }
 
             rtIsActive = true;
             rtIsPaused = false;
 
-            // UI → show STOP button
+            // UI → STOP button
             const btn = document.getElementById('rt-start-stop-btn');
             btn.textContent = 'STOP';
             btn.classList.remove('bg-green-700');
             btn.classList.add('bg-red-700');
 
-            rtChunkLoop();
-        }
-
-        // Build array of {type:'text'|'enter'|'tab', value:string} chunks
-        // Splits text only at \n and \t boundaries — never at spaces/symbols
-        // This means we send whole words+symbols as one TypeText call (reliable)
-        function buildChunks(text) {
-            const chunks = [];
-            let buf = '';
-            for (let i = 0; i < text.length; i++) {
-                const ch = text[i];
-                if (ch === '\r') {
-                    // Skip \r (Windows CRLF — \n follows)
-                    continue;
-                } else if (ch === '\n') {
-                    if (buf.length > 0) { chunks.push({ type: 'text', value: buf }); buf = ''; }
-                    chunks.push({ type: 'enter' });
-                } else if (ch === '\t') {
-                    if (buf.length > 0) { chunks.push({ type: 'text', value: buf }); buf = ''; }
-                    chunks.push({ type: 'tab' });
-                } else {
-                    buf += ch;
-                }
-            }
-            if (buf.length > 0) chunks.push({ type: 'text', value: buf });
-            return chunks;
+            // Use setInterval exactly like AUTO TYPE — proven to work
+            rtSpeed = parseInt(document.getElementById('rt-speed-select').value, 10);
+            if (rtIntervalId) { clearInterval(rtIntervalId); }
+            rtIntervalId = setInterval(rtTick, rtSpeed);
         }
 
         function pauseRealtimePaste() {
             if (!rtIsActive) return;
             rtIsPaused = true;
-            if (rtTimeoutId) { clearTimeout(rtTimeoutId); rtTimeoutId = null; }
+            if (rtIntervalId) { clearInterval(rtIntervalId); rtIntervalId = null; }
             const btn = document.getElementById('rt-start-stop-btn');
             if (btn) {
                 btn.textContent = 'START';
@@ -1072,18 +1049,19 @@
             }
         }
 
-        // ── REALTIME: chunk-based typing loop ────────────────
-        // Sends one chunk per tick (a chunk = a full line segment or a key event)
-        // Speed = delay BETWEEN chunks — prevents PS pipe overload & garbling
-        function rtChunkLoop() {
-            if (rtIsPaused || !rtIsActive) return;
+        // ── REALTIME: one tick = one character (identical to AUTO TYPE) ──
+        function rtTick() {
+            // Skip \r (Windows line endings)
+            while (rtCurrentIndex < rtClipboardText.length && rtClipboardText[rtCurrentIndex] === '\r') {
+                rtCurrentIndex++;
+            }
 
-            // Completion check
-            if (rtChunkIndex >= rtChunks.length) {
+            // Done?
+            if (rtCurrentIndex >= rtClipboardText.length) {
+                clearInterval(rtIntervalId);
+                rtIntervalId = null;
                 rtIsActive   = false;
                 rtIsPaused   = false;
-                rtTimeoutId  = null;
-                rtCurrentIndex = rtClipboardText.length;
                 const btn = document.getElementById('rt-start-stop-btn');
                 if (btn) {
                     btn.textContent = 'START';
@@ -1094,28 +1072,21 @@
                 return;
             }
 
-            const chunk = rtChunks[rtChunkIndex];
-            rtChunkIndex++;
+            const char = rtClipboardText[rtCurrentIndex];
+            rtCurrentIndex++;
 
-            // Send chunk to PC
-            if (chunk.type === 'text') {
-                // Send entire text segment as one TypeText call — no garbling
-                emit('command:type', { text: chunk.value });
-                // Advance character index by text length
-                rtCurrentIndex += chunk.value.length;
-            } else if (chunk.type === 'enter') {
+            // Exactly like AUTO TYPE for all chars except \n and \t
+            if (char === '\n') {
                 emit('command:key', { key: 'enter' });
-                rtCurrentIndex += 1; // \n
-            } else if (chunk.type === 'tab') {
+            } else if (char === '\t') {
                 emit('command:key', { key: 'tab' });
-                rtCurrentIndex += 1; // \t
+            } else {
+                // ALL other chars (letters, digits, symbols, spaces, unicode)
+                // go through command:type — same as AUTO TYPE
+                emit('command:type', { text: char });
             }
 
             updateRtProgress();
-
-            // Delay between chunks (read live so speed changes mid-run)
-            const delay = parseInt(document.getElementById('rt-speed-select').value, 10);
-            rtTimeoutId = setTimeout(rtChunkLoop, delay);
         }
 
         // ── Update progress bar & label ──────────────────────
