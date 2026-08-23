@@ -1075,22 +1075,29 @@
             updateRtProgress();
 
             if (line.length === 0) {
-                // Empty line: just press Enter (no clipboard needed)
+                // Empty line: just press Enter
                 if (!isLast) emit('command:key', { key: 'enter' });
                 rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
             } else {
-                // Paste line via clipboard — same as NORMAL paste, works perfectly
-                emit('command:clipboard-set', { text: line, paste: true });
+                // Step 1: Set clipboard (NO auto-paste — same as working NORMAL paste)
+                emit('command:clipboard-set', { text: line, paste: false });
 
-                // Wait 350ms for relay + clipboard + Ctrl+V to complete, then send Enter
+                // Step 2: After 200ms clipboard settles → send Ctrl+V
                 rtTimeoutId = setTimeout(() => {
                     if (rtIsPaused) return;
-                    if (!isLast) emit('command:key', { key: 'enter' });
-                    // Then wait user-controlled delay before next line
-                    rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
-                }, 350);
+                    emit('command:key', { key: 'paste' });
+
+                    // Step 3: After 150ms paste completes → send Enter (if not last line)
+                    rtTimeoutId = setTimeout(() => {
+                        if (rtIsPaused) return;
+                        if (!isLast) emit('command:key', { key: 'enter' });
+                        // Step 4: Wait user delay then do next line
+                        rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
+                    }, 150);
+                }, 200);
             }
         }
+
 
         function rtGetDelay() {
             return parseInt(document.getElementById('rt-speed-select').value, 10);
