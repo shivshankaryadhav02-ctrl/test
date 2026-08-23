@@ -1079,24 +1079,19 @@
                 if (!isLast) emit('command:key', { key: 'enter' });
                 rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
             } else {
-                // Step 1: Set clipboard (NO auto-paste — same as working NORMAL paste)
-                emit('command:clipboard-set', { text: line, paste: false });
+                // Send entire line as ONE command:type call (atomic, no pipe flooding)
+                // TypeText handles all chars including symbols via KEYEVENTF_UNICODE
+                emit('command:type', { text: line });
 
-                // Step 2: After 200ms clipboard settles → send Ctrl+V
+                // Wait 200ms for TypeText to finish, then send Enter
                 rtTimeoutId = setTimeout(() => {
                     if (rtIsPaused) return;
-                    emit('command:key', { key: 'paste' });
-
-                    // Step 3: After 150ms paste completes → send Enter (if not last line)
-                    rtTimeoutId = setTimeout(() => {
-                        if (rtIsPaused) return;
-                        if (!isLast) emit('command:key', { key: 'enter' });
-                        // Step 4: Wait user delay then do next line
-                        rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
-                    }, 150);
+                    if (!isLast) emit('command:key', { key: 'enter' });
+                    rtTimeoutId = setTimeout(rtDoNextLine, rtGetDelay());
                 }, 200);
             }
         }
+
 
 
         function rtGetDelay() {
